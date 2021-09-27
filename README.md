@@ -1,10 +1,8 @@
-
+---
+Date:	2021-08-23
+Version:	0.3
+---
 # Wastewater reporting bioinformatics procedure
-
-Date:		| Version:
-|:-|:-
-2021-06-22	| 0.2
-
 
 # Introduction
 
@@ -24,25 +22,24 @@ Sample data is processed using the same pipeline configuration as currently used
 > **Summary:** all the necessary setup is already contained in the [pangolin](https://github.com/cbg-ethz/pangolin) repository. The repository needs to be cloned with its submodules, and the user needs to provide a bioconda installation in `pangolin/miniconda3` with packages _snakemake-minimal_ and _mamba_
 
 The pipeline is configured as described in the repository [https://github.com/cbg-ethz/pangolin](https://github.com/cbg-ethz/pangolin) and its submodules.
-- branch: [master](https://github.com/cbg-ethz/pangolin/tree/master), tip: [5d8c08b98afe8998770163891d070fb7cc7753f8](https://github.com/cbg-ethz/pangolin/commit/5d8c08b98afe8998770163891d070fb7cc7753f8)
+- branch: [master](https://github.com/cbg-ethz/pangolin/tree/master), tip: [915bd05768bc9ac5d2bab527dbb3e8042c854708](https://github.com/cbg-ethz/pangolin/commit/915bd05768bc9ac5d2bab527dbb3e8042c854708)
 
 Only the setup of V-pipe and cojac are described here.
 
 ### V-pipe setup
 
-The V-pipe version provided by pangolin is set up following the same layout as produced by running the installer (it is equivalent to the results of running `bash quick_install.sh -b caesar_div -p pangolin -w working`, see [tutorial](https://cbg-ethz.github.io/V-pipe/tutorial/sars-cov2/#install-v-pipe)) and relies on the three directories:  
-- `pangolin/miniconda3` - **user-provided** installation of [miniconda3](https://bioconda.github.io/user/install.html) with packages _[snakemake-minimal](https://bioconda.github.io/recipes/snakemake/README.html)_ and _[mamba](https://anaconda.org/conda-forge/mamba)_ installed (see link for installation instruction).  
-- `pangolin/V-pipe` - installation of V-pipe as specified by the pangolin repository’s sub-module (simply checkout the submodule), namely:  
-  - repository: [https://github.com/cbg-ethz/V-pipe  
-](https://github.com/cbg-ethz/V-pipe)
-  - branch: [caesar_div](https://github.com/cbg-ethz/V-pipe/tree/caesar_div), tip: [cccd32f691a85f3bec78782454f9716c04bc6577](https://github.com/cbg-ethz/V-pipe/commit/cccd32f691a85f3bec78782454f9716c04bc6577)
-- `pangolin/working` - working directory provided by the pangolin repository. Of note:  
-  - `pangolin/working/vpipe.config` - specific configuration used ([the default configuration for SARS-CoV-2](https://cbg-ethz.github.io/V-pipe/sars-cov-2/) relies on [bwa](http://bio-bwa.sourceforge.net/) for alignment with reference [NC_045512](https://www.ncbi.nlm.nih.gov/nuccore/NC_045512) and [ShoRAH](https://github.com/cbg-ethz/shorah) for SNV and local haplotype calling. In addition, the resource parameters have been fine-tuned to allow the processing of very large cohorts).  
+The V-pipe version provided by pangolin is set up following the same layout as produced by running the installer (it is equivalent to the results of running `bash quick_install.sh -b rubicon -p pangolin -w working`, see [tutorial](https://cbg-ethz.github.io/V-pipe/tutorial/sars-cov2/#install-v-pipe)) and relies on the three directories:
+- `pangolin/miniconda3` - **user-provided** installation of [miniconda3](https://bioconda.github.io/user/install.html) with packages _[snakemake-minimal](https://bioconda.github.io/recipes/snakemake/README.html)_ and _[mamba](https://anaconda.org/conda-forge/mamba)_ installed (see link for installation instruction).
+- `pangolin/V-pipe` - installation of V-pipe as specified by the pangolin repository’s sub-module (simply checkout the submodule), namely:
+  - repository: [https://github.com/cbg-ethz/V-pipe](https://github.com/cbg-ethz/V-pipe)
+  - branch: [rubicon](https://github.com/cbg-ethz/V-pipe/tree/rubicon), tip: [5b91d2e901ce833fb686417c2a5384d4dd6e4789](https://github.com/cbg-ethz/V-pipe/commit/5b91d2e901ce833fb686417c2a5384d4dd6e4789)
+- `pangolin/working` - working directory provided by the pangolin repository. Of note:
+  - `pangolin/working/vpipe.config` - specific configuration used ([the virus-specific base configuration for SARS-CoV-2](https://github.com/cbg-ethz/V-pipe/blob/master/config/sars-cov-2.yaml) relies on [bwa](http://bio-bwa.sourceforge.net/) for alignment with reference [NC_045512](https://www.ncbi.nlm.nih.gov/nuccore/NC_045512) and [ShoRAH](https://github.com/cbg-ethz/shorah) for SNV and local haplotype calling. In addition, the resource parameters have been fine-tuned to allow the processing of very large cohorts).
   - `pangolin/working/`_*_`.bsub` - jobs used to perform the processing
 
 *[SNV]: Single Nucleotide Variant
 
-This V-pipe setup will store snakemake environments in `pangolin/snake-envs`. It is possible to pre-download them in advance by running `cd pangolin/V-pipe; ./vpipe --jobs 16 --conda-create-envs-only` (see [tutorial](https://cbg-ethz.github.io/V-pipe/tutorial/sars-cov2/#running-v-pipe-on-the-cluster)).
+This V-pipe setup will store snakemake environments in `pangolin/snake-envs`. It is possible to pre-download them in advance by running `cd pangolin/V-pipe; ./vpipe --jobs 16 --conda-create-envs-only` (see [tutorial](https://cbg-ethz.github.io/V-pipe/tutorial/sars-cov2/#running-v-pipe-on-the-cluster)). On our cluster, this is performed by the command `pangolin/working/create_envs` which also takes care of HTTP proxy.
 
 
 ## Processing raw-reads with V-pipe
@@ -55,7 +52,7 @@ V-pipe expects its input in subdirectories of `pangolin/working/samples` followi
 
 In the current procedure, this is provided autonomously by the setup used for S3C, and is similar to the output generated by scripts provided in `pangolin/sort_samples_dumb` and `pangolin/sort_samples_demultiplexstats`.
 
-The present procedure relies on the wastewater samples following this naming schema, specifically providing a two-digit wastewater treatment plant (WWTP), and a sampling date:
+The present procedure relies on the wastewater from Eawag samples following this naming schema, specifically providing a two-digit wastewater treatment plant (WWTP), and a sampling date:
 
 *[WWTP]: Wastewater Treatment Plant
 
@@ -76,6 +73,15 @@ The present procedure relies on the wastewater samples following this naming sch
 10_2020_04_26_30kd
 ```
 
+The Kanton Zürich data follow a different schema:
+
+```
+       ┌───────── Date
+       │      ┌── (optionnal: alternate kit)
+       ┴───── ┴─
+KLZHCov210815_2
+```
+
 ### Configuration
 
 The configuration for running V-pipe resides in the file `pangolin/working/vpipe.config`. The configuration as used presently in the procedure is provided in the repository pangolin as mentioned in [installation](#installation).
@@ -94,9 +100,8 @@ This will run the initial steps of V-pipe but stop before calling SNV and local 
 A cojac version is provided by pangolin in this directory:
 
 - `pangolin/cojac`  - installation of cojac as specified by the pangolin repository’s sub-module (simply checkout the submodule), namely:
-  - repository: [https://github.com/cbg-ethz/cojac
-](https://github.com/cbg-ethz/cojac)
-  - branch: [dev](https://github.com/cbg-ethz/cojac/tree/dev), tip: [79b4fe85de77175d9d7d93c02c96f9ba20b18b7d](https://github.com/cbg-ethz/cojac/commit/79b4fe85de77175d9d7d93c02c96f9ba20b18b7d)
+  - repository: [https://github.com/cbg-ethz/cojac](https://github.com/cbg-ethz/cojac)
+  - branch: [dev](https://github.com/cbg-ethz/cojac/tree/dev), tip: [02df47b8b2e8369ff392fdbde538bb86480e8117](https://github.com/cbg-ethz/cojac/commit/02df47b8b2e8369ff392fdbde538bb86480e8117)
 
 ### Inputs
 
@@ -109,6 +114,19 @@ A cojac version is provided by pangolin in this directory:
 In the directory `pangolin`, submit the job `ww.bsub` to the cluster.
 
 This will run the cojac's `cooc-mutbamscan` and `cooc-tabmut` on all samples listed in the TSV
+
+#### Subset only
+
+To avoid rerunning on the whole set of samples, it possible to specify the latest sequencing batch by setting the BATCH variable inside the bsub script:
+
+```bash
+sed -r 's@^BATCH=@\0"20210924_HK7YWDRXY"@' ww.bsub | bsub
+```
+
+This will:
+
+ - automatically update `/pangolin/working/samples.wastewateronly.tsv`
+ - append that batch's cojac output to `/pangolin/orking/ww-cooc.yaml`
 
 ### Outputs
 - `working/ww-cooc.yaml` - internal cojac format with coocurrences
@@ -170,16 +188,16 @@ It is possible to specify the path to search for the input files in the cell in 
 - `tallymut_line.tsv` - table of all variant-characteristic mutations found
 
 
-## Generate the plot
+## Generate the plot: Heatmaps
 
-The third notebook - `ww_smoothing_cov.ipynb` - performs the smoothing and generates the plots.
+The third notebook - `ww_heatmaps_cov.ipynb` - generates the heatmaps plots.
 
 ### Input
 
 - `tallymut_line.tsv` - table of all variant-characteristic mutations generated by the previous notebook.
 - `working/ww-cooc.csv` - table with coocurrences
 
-> **Note:** unlike the notebook `ww_smoothing.ipynb` used in the article, posterior probabilities of the local haplotype generated by ShoRAH are not taken into account presently.
+> **Note:** unlike the notebook `pangolin/cojac/notebooks/ww_smoothing.ipynb` used in the article, posterior probabilities of the local haplotype generated by ShoRAH are not taken into account presently.
 
 ### Configuration
 
@@ -190,7 +208,6 @@ It is possible to specify the path to search for the input files in the cell in 
 - _variants_pangolin_ - dictionary mapping short names to the official [PANGO lineages](https://cov-lineages.org/) that should be used during upload to [covSPECTRUM](https://cov-spectrum.ethz.ch/) (see: "_pangolin:_" fields in the `voc/`_*_`.yaml` description)
 - _amplicons_ - currently only a subset of all amplicons are listed on the heatmaps, they as specified here, including the mutations they are linking
 
-In addition the actual upload itself requires database credentials. These are currently retrieved from `~/.netrc` standard Unix credential storage, but alternative methods are commented-out in the cells under the "Upload to Cov-Spectrum" section.
 
 ### Execution
 
@@ -198,14 +215,64 @@ In addition the actual upload itself requires database credentials. These are cu
 - Inspect the generated heatmaps for any unexpected results.
 
   > **Note:** mutations that aren’t exclusive to a single variant are removed from the rarer variant, see [comments at the end](#comments-regarding-the-current-procedure)
+
+- Run remaining cells until end of section "Make data for covSPECTRUM".
+
+### Outputs
+
+- `ww_update_data_heatmap.json` - a file with uploadable data for covSPECTRUM that contains the heatmaps.
+
+
+## Generate the plot: Curves
+
+The fourth notebook - `ww_smoothing_regression_cov.ipynb` - performs the Ridge regression, lowess smoothing and generates the plots.
+
+> **Note:** unlike the notebook `pangolin/cojac/notebooks/ww_smoothing.ipynb` used in the article, posterior probabilities of the local haplotype generated by ShoRAH are not taken into account and the curves are built using a Ridge regression which is more robust against variants that share mutations in their signature.
+
+
+### Input
+
+- `tallymut_line.tsv` - table of all variant-characteristic mutations generated by the previous notebook.
+- `ww_update_data_heatmap.json` - uploadable heatmaps, to which the this notebook will add the curves.
  
-- Run remaining cells until end of section "Curves"
-- Inspect the generated curves for any unexpected result.
-- Run cell in section "Make data for Cov-Spectrum".
-- Run cells in section "Upload to Cov-Spectrum" with the following:  
-  - the cell tagged "`## Abort DB update !`" is used only to abort the update and rollback to the initial state in case or problems. It is skipped otherwise
+### Configuration
+
+It is possible to specify the path to search for the input files in the cell in the section titled "Globals". It is similar to the previous notebook (`ww_heatmaps_cov.ipynb`).
+
+### Execution
+
+- Run all cells until the end of section "Prevalence Plots".
+- Inspect the generated heatmaps for any unexpected results.
+
+  > **Note:** the regression also displays a curve for unknown variants, defined by the complement of the other variants' heatmaps. But currently is not uploaded to covSPECTRUM, pending confirmation that its code would correctly handle it.
+
+- Run remaining cells until end of section "Add Timeseries Data to Heatmap json File"
+
+
+### Outputs
+
+- `ww_update_data_combined.json` - a file with uploadable data for covSPECTRUM that contains both the curves and the heatmaps.
+
+
+## Upload
+
+The fifth notebook - `ww_cov_uploader.ipynb` - handles the upload onto covSPECTRUM itself
+
+### Input
+
+- `ww_update_data_combined.json` - the combination of both the curves and the heatmaps.
+
+In addition the actual upload itself requires database credentials. These are currently retrieved from `~/.netrc` standard Unix credential storage, but alternative methods are commented-out in the cells under the "Upload to Cov-Spectrum" section.
+
+### Execution
+
+- Run cells in section "Upload to Cov-Spectrum" with the following:
+  - the cell tagged "`## Abort DB update !`" is used only to abort the update and rollback to the initial state in case or problems. It is skipped otherwise.
   - the cell tagged "`## Save to DB !`" is used instead to make the changes permanent in the database.
 
+### Outputs
+
+The curves are now load up on [covSPECTRUM](https://cov-spectrum.ethz.ch/story/wastewater-in-switzerland).
 
 # Comments regarding the current procedure
 
@@ -213,13 +280,15 @@ Unlike the pre-print [doi:10.1101/2021.01.08.21249379](https://www.medrxiv.org/c
 
 This would reduce the individual confidence of the mutation positions and show some low frequency noise in the heatmaps, but as the curves are generated by combining the mean of multiple mutation sites the final curves still display a signal of visually similar quality to the pre-print.
 
+
 The lowess smoothing is performed over a fraction corresponding to 20 days, in line with what the 1/3rd smoothing in the preprint was producing.
 
 As an additional measure to avoid outliers, mutations which aren’t exclusive to a single variant aren’t taken into account in B.1.351/beta/ZA and P.1/gamma/BR.
 E.g.: mutation nuc: A23063T (aa: N501Y) will not be used there as it is also present in B.1.1.7/alpha/UK and would artificially inflate the numbers.
 
-The variants delta/B.1.617.2, the other members of the B.1.617* family (.1 and .3) and to a lesser extent C.36.3 have mutations in common and a difficult to distinguish.
+The variants delta/B.1.617.2, the other members of the B.1.617* family (.1 and .3) and to a lesser extent C.36.3 have mutations in common.
 Amplicons which are specific to delta/B.1.617.2 on one hand, and to other members of the B.1.617* family (.1 and .3) on the other hand are displayed on the heatmaps and help distinguishing them.
+The computation of the curves now uses a Ridge regression which is more robust against variants that share mutations in their signature.
 
 The values of the curves are currently clipped to the [0;1] interval as the smoothing can currently generate values outside this range.
 
