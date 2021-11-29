@@ -1,12 +1,12 @@
 ---
-Date:	2021-08-23
-Version:	0.3
+Date:	2021-11-29
+Version:	0.5
 ---
 # Wastewater reporting bioinformatics procedure
 
 # Introduction
 
-This readme file describes the procedure which is used since 2021-06-01 to prepare the wastewater-based SARS-CoV-2 prevalence display on [covSPECTRUM](https://cov-spectrum.ethz.ch/) as used on the page [Surveillance of SARS-CoV-2 genomic variants in wastewater](https://bsse.ethz.ch/cbg/research/computational-virology/sarscov2-variants-wastewater-surveillance.html). The main reference is [doi:10.1101/2021.01.08.21249379](https://www.medrxiv.org/content/10.1101/2021.01.08.21249379).
+This readme file describes the procedure which is used since 2021-06-01 to prepare the wastewater-based SARS-CoV-2 prevalence display on [covSPECTRUM](https://cov-spectrum.ethz.ch/story/wastewater-in-switzerland) as used on the page [Surveillance of SARS-CoV-2 genomic variants in wastewater](https://bsse.ethz.ch/cbg/research/computational-virology/sarscov2-variants-wastewater-surveillance.html). The main reference is [doi:10.1101/2021.01.08.21249379](https://www.medrxiv.org/content/10.1101/2021.01.08.21249379).
 
 
 # Base processing
@@ -205,6 +205,7 @@ It is possible to specify the path to search for the input files in the cell in 
 
 - _cities_list_ - list of the city names to be plotted (as specified in table `ww_plants.tsv` during the [previous step](#building-the-variant-mutation-table)).
 - _variants_list_ - list of short names to be plotted (as specified in the "_short:_" field of the `voc/`_*_`.yaml` descriptions).
+- _variants_list_upload_ - list of short names to be plotted and updated (it is possible to specify only a subset to be uploaded. This is useful if there are variants which haven't been observed yet. You might want to watch the heatmap (and the amplicons on it) for early signs. But drawing curves that stay constantly at zero wouldn't be very useful).
 - _variants_pangolin_ - dictionary mapping short names to the official [PANGO lineages](https://cov-lineages.org/) that should be used during upload to [covSPECTRUM](https://cov-spectrum.ethz.ch/) (see: "_pangolin:_" fields in the `voc/`_*_`.yaml` description)
 - _amplicons_ - currently only a subset of all amplicons are listed on the heatmaps, they as specified here, including the mutations they are linking
 
@@ -285,10 +286,13 @@ The lowess smoothing is performed over a fraction corresponding to 20 days, in l
 
 As an additional measure to avoid outliers, mutations which aren’t exclusive to a single variant aren’t taken into account in B.1.351/beta/ZA and P.1/gamma/BR.
 E.g.: mutation nuc: A23063T (aa: N501Y) will not be used there as it is also present in B.1.1.7/alpha/UK and would artificially inflate the numbers.
+Other similar signature mutations which do not follow the general trend of a variant are also filtered out.
 
 The variants delta/B.1.617.2, the other members of the B.1.617* family (.1 and .3) and to a lesser extent C.36.3 have mutations in common.
 Amplicons which are specific to delta/B.1.617.2 on one hand, and to other members of the B.1.617* family (.1 and .3) on the other hand are displayed on the heatmaps and help distinguishing them.
 The computation of the curves now uses a Ridge regression which is more robust against variants that share mutations in their signature.
+
+'Undetermined' is defined by the absence of signature mutations, thus it doesn't have its own heatmap (it is defined by the complement of all other heatmaps).
 
 The values of the curves are currently clipped to the [0;1] interval as the smoothing can currently generate values outside this range.
 
