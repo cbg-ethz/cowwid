@@ -1,12 +1,12 @@
 ---
-Date:	2021-11-29
-Version:	0.5
+Date:	2022-02-02
+Version:	0.7
 ---
 # Wastewater reporting bioinformatics procedure
 
 # Introduction
 
-This readme file describes the procedure which is used since 2021-06-01 to prepare the wastewater-based SARS-CoV-2 prevalence display on [covSPECTRUM](https://cov-spectrum.ethz.ch/story/wastewater-in-switzerland) as used on the page [Surveillance of SARS-CoV-2 genomic variants in wastewater](https://bsse.ethz.ch/cbg/research/computational-virology/sarscov2-variants-wastewater-surveillance.html). The main reference is [doi:10.1101/2021.01.08.21249379](https://www.medrxiv.org/content/10.1101/2021.01.08.21249379).
+This readme file describes the procedure which is used since 2021-06-01 to prepare the wastewater-based SARS-CoV-2 prevalence display on [CoV-Spectrum](https://cov-spectrum.ethz.ch/story/wastewater-in-switzerland) as used on the page [Surveillance of SARS-CoV-2 genomic variants in wastewater](https://bsse.ethz.ch/cbg/research/computational-virology/sarscov2-variants-wastewater-surveillance.html). The main reference is [doi:10.1101/2021.01.08.21249379](https://www.medrxiv.org/content/10.1101/2021.01.08.21249379).
 
 
 # Base processing
@@ -22,17 +22,17 @@ Sample data is processed using the same pipeline configuration as currently used
 > **Summary:** all the necessary setup is already contained in the [pangolin](https://github.com/cbg-ethz/pangolin) repository. The repository needs to be cloned with its submodules, and the user needs to provide a bioconda installation in `pangolin/miniconda3` with packages _snakemake-minimal_ and _mamba_
 
 The pipeline is configured as described in the repository [https://github.com/cbg-ethz/pangolin](https://github.com/cbg-ethz/pangolin) and its submodules.
-- branch: [master](https://github.com/cbg-ethz/pangolin/tree/master), tip: [915bd05768bc9ac5d2bab527dbb3e8042c854708](https://github.com/cbg-ethz/pangolin/commit/915bd05768bc9ac5d2bab527dbb3e8042c854708)
+- branch: [master](https://github.com/cbg-ethz/pangolin/tree/master), tip: [f1f9fcb7088bf235bfe94145f5354999a9b420c4](https://github.com/cbg-ethz/pangolin/commit/f1f9fcb7088bf235bfe94145f5354999a9b420c4)
 
 Only the setup of V-pipe and cojac are described here.
 
 ### V-pipe setup
 
-The V-pipe version provided by pangolin is set up following the same layout as produced by running the installer (it is equivalent to the results of running `bash quick_install.sh -b rubicon -p pangolin -w working`, see [tutorial](https://cbg-ethz.github.io/V-pipe/tutorial/sars-cov2/#install-v-pipe)) and relies on the three directories:
+The V-pipe version provided by pangolin is set up following the same layout as produced by running the installer (it is equivalent to the results of running `bash quick_install.sh -b rubicon -p pangolin -w working`, see [tutorial](https://cbg-ethz.github.io/V-pipe/tutorial/sars-cov2/#install-v-pipe) and [V-pipe's main README.md](https://github.com/cbg-ethz/V-pipe/blob/master/README.md#using-quick-install-script)) and relies on the three directories:
 - `pangolin/miniconda3` - **user-provided** installation of [miniconda3](https://bioconda.github.io/user/install.html) with packages _[snakemake-minimal](https://bioconda.github.io/recipes/snakemake/README.html)_ and _[mamba](https://anaconda.org/conda-forge/mamba)_ installed (see link for installation instruction).
 - `pangolin/V-pipe` - installation of V-pipe as specified by the pangolin repository’s sub-module (simply checkout the submodule), namely:
   - repository: [https://github.com/cbg-ethz/V-pipe](https://github.com/cbg-ethz/V-pipe)
-  - branch: [rubicon](https://github.com/cbg-ethz/V-pipe/tree/rubicon), tip: [5b91d2e901ce833fb686417c2a5384d4dd6e4789](https://github.com/cbg-ethz/V-pipe/commit/5b91d2e901ce833fb686417c2a5384d4dd6e4789)
+  - branch: [rubicon](https://github.com/cbg-ethz/V-pipe/tree/rubicon), tip: [a6d8236fc965b9044b01d78ec132ed755fe9fac9](https://github.com/cbg-ethz/V-pipe/commit/a6d8236fc965b9044b01d78ec132ed755fe9fac9)
 - `pangolin/working` - working directory provided by the pangolin repository. Of note:
   - `pangolin/working/vpipe.config` - specific configuration used ([the virus-specific base configuration for SARS-CoV-2](https://github.com/cbg-ethz/V-pipe/blob/master/config/sars-cov-2.yaml) relies on [bwa](http://bio-bwa.sourceforge.net/) for alignment with reference [NC_045512](https://www.ncbi.nlm.nih.gov/nuccore/NC_045512) and [ShoRAH](https://github.com/cbg-ethz/shorah) for SNV and local haplotype calling. In addition, the resource parameters have been fine-tuned to allow the processing of very large cohorts).
   - `pangolin/working/`_*_`.bsub` - jobs used to perform the processing
@@ -76,10 +76,19 @@ The present procedure relies on the wastewater from Eawag samples following this
 The Kanton Zürich data follow a different schema:
 
 ```
-       ┌───────── Date
+       ┌───────── Date: YYmmdd)
        │      ┌── (optionnal: alternate kit)
        ┴───── ┴─
 KLZHCov210815_2
+```
+
+Basel has another schema:
+```
+  ┌──────────────────── (internal id)
+  │      ┌───────────── Date: YYYY-mm-dd
+  │      │          ┌── (optionnal: alternate kit)
+  ┴───── ┴───────── ┴─
+Ba210449_2021-11-10
 ```
 
 ### Configuration
@@ -101,36 +110,96 @@ A cojac version is provided by pangolin in this directory:
 
 - `pangolin/cojac`  - installation of cojac as specified by the pangolin repository’s sub-module (simply checkout the submodule), namely:
   - repository: [https://github.com/cbg-ethz/cojac](https://github.com/cbg-ethz/cojac)
-  - branch: [dev](https://github.com/cbg-ethz/cojac/tree/dev), tip: [02df47b8b2e8369ff392fdbde538bb86480e8117](https://github.com/cbg-ethz/cojac/commit/02df47b8b2e8369ff392fdbde538bb86480e8117)
+  - branch: [dev](https://github.com/cbg-ethz/cojac/tree/dev), tip: [ebbaa052a0378d70513df6aad734d6abe6fe28a4](https://github.com/cbg-ethz/cojac/commit/ebbaa052a0378d70513df6aad734d6abe6fe28a4)
 
 ### Inputs
 
 - `/pangolin/working/samples.wastewateronly.tsv` - TSV table of the samples (the subset samples.tsv with wastewater samples)
 - `/pangolin/cojac/voc/`*`.yaml` - definition of the variants
-- `/pangolin/cojac/cojac/nCoV-2019.insert.bed` - amplicon positions
+- `/pangolin/cojac/cojac/nCoV-2019.insert.V3.bed` - amplicon positions for ARTIC V3
+- `/pangolin/cojac/cojac/SARS-CoV-2.insert.V4.txt` - amplicon positions for ARTIC V3
+- `/pangolin/amplicons.v3.yaml` - amplicon description (generated from cojac's definitions) and
+- `/pangolin/amplicons.v4.yaml`
 
 ### Execution
 
-In the directory `pangolin`, submit the job `ww.bsub` to the cluster.
+In the directory `pangolin`, there is a tool called `ww-launcher` (that can assist in submit the job `ww.bsub` to the cluster).
 
-This will run the cojac's `cooc-mutbamscan` and `cooc-tabmut` on all samples listed in the TSV
+```console
+# ./ww-launcher -h
+Usage: ./ww-launcher [ -m ] [-b <BATCH>] [ -p <PROTO> ]
+options:
+-b <BATCH>   only run on this batch
+-p <PROTO>   protocol used
+             [default: v4]
+-m           mass-rebuild using new definition in test/cojac/
+             (use -b to only test new def on single batch)
+-h           print this help message and exit
+```
+
+The submitted job(s) will in turn run the cojac's `cooc-mutbamscan` and `cooc-tabmut` on all samples listed in the TSV
+
+#### Protocols
+
+The `ww-launcher` script now maintains separate set of files for ARTIC V3 and V4 protocols, distinguishied by the `.v3.` and `.v4.` part in their output name (see below).
 
 #### Subset only
 
-To avoid rerunning on the whole set of samples, it possible to specify the latest sequencing batch by setting the BATCH variable inside the bsub script:
+To avoid rerunning on the whole set of samples, it possible to specify the latest sequencing batch
+(with option `-b`) and the sequencing protocol (option `-p`) that were used
 
 ```bash
-sed -r 's@^BATCH=@\0"20210924_HK7YWDRXY"@' ww.bsub | bsub
+./ww-launcher -b "20210924_HK7YWDRXY" -p "v3"
 ```
 
 This will:
 
- - automatically update `/pangolin/working/samples.wastewateronly.tsv`
- - append that batch's cojac output to `/pangolin/orking/ww-cooc.yaml`
+ - use the pre-computed amplicons definition from `/pangolin/amplicons.v3.yaml`
+ - automatically update `/pangolin/working/samples.wastewateronly.tsv` and
+   `/pangolin/working/samples.wastewateronly.v3.tsv`
+ - append that batch's cojac output to `/pangolin/working/ww-cooc.v3.yaml`
+
+
+#### Test and mass-rebuild
+
+When testing a new version of cojac with, e.g., new definition,
+it is possible to install a test version in `test/cojac/`.
+
+Using the `-m` option will attempt re-running all samples using the new versions.
+
+Samples will be processed as ARTIC V3 or V4, depending on whether they are listed in `/pangolin/working/samples.wastewateronly.v3.tsv` or `/pangolin/working/samples.wastewateronly.v4.tsv`.
+
+For v3:
+ - `/pangolin/cojac/cojac/nCoV-2019.insert.V3.bed` - amplicon positions will be used.
+
+And these files will be generated:
+ - `/pangolin/amplicons.new.v3.yaml` - new amplicon definition generated from `test/cojac/voc/`_*_`.yaml`
+ - `/pangolin/working/ww-new-v3-`_batch_`.yaml` - (per batch parallel output)
+ - `/pangolin/working/ww-new-v3.yaml`  internal cojac format with coocurrences
+ - `/pangolin/working/ww-new-v3.csv` - table for downstream analysis
+
+For v4:
+ - `/pangolin/cojac/cojac/SARS-CoV-2.insert.V4.txt` - amplicon positions will be used.
+
+And these files will be generated:
+ - `/pangolin/amplicons.new.v4.yaml` - new amplicon definition generated from `test/cojac/voc/`_*_`.yaml`
+ - `/pangolin/working/ww-new-v4-`_batch_`.yaml` - (per batch parallel output)
+ - `/pangolin/working/ww-new-v4.yaml`  internal cojac format with coocurrences
+ - `/pangolin/working/ww-new-v4.csv` - table for downstream analysis
+
+After the jobs launched by `./ww-launcher` have finished, check the content of the above generated files,
+and if happy with the result, move these generated files into:
+
+ - the pre-computed amplicons definition in `/pangolin/amplicons.v3.yaml` and `/pangolin/amplicons.v4.yaml`
+ - the output files listed below
+ - (you can safely delete the per-batch parallel output)
 
 ### Outputs
-- `working/ww-cooc.yaml` - internal cojac format with coocurrences
-- `working/ww-cooc.csv` - table for downstream analysis
+
+- `working/ww-cooc.v3.yaml` - internal cojac format with coocurrences
+- `working/ww-cooc.v3.csv` - table for downstream analysis
+- `working/ww-cooc.v4.yaml` - same but with ARTIC V4
+- `working/ww-cooc.v4.csv`
 
 
 # Wastewater analysis
@@ -195,7 +264,10 @@ The third notebook - `ww_heatmaps_cov.ipynb` - generates the heatmaps plots.
 ### Input
 
 - `tallymut_line.tsv` - table of all variant-characteristic mutations generated by the previous notebook.
-- `working/ww-cooc.csv` - table with coocurrences
+- `working/ww-cooc.v3.csv` - table with coocurrences in samples processed with ARTIC V3
+- `working/amplicons.v3.yaml` - amplicon definitions used to create the cooccurrence table
+- `working/ww-cooc.v4.csv` - same with ARTIC V4
+- `working/amplicons.v4.yaml`
 
 > **Note:** unlike the notebook `pangolin/cojac/notebooks/ww_smoothing.ipynb` used in the article, posterior probabilities of the local haplotype generated by ShoRAH are not taken into account presently.
 
@@ -206,8 +278,10 @@ It is possible to specify the path to search for the input files in the cell in 
 - _cities_list_ - list of the city names to be plotted (as specified in table `ww_plants.tsv` during the [previous step](#building-the-variant-mutation-table)).
 - _variants_list_ - list of short names to be plotted (as specified in the "_short:_" field of the `voc/`_*_`.yaml` descriptions).
 - _variants_list_upload_ - list of short names to be plotted and updated (it is possible to specify only a subset to be uploaded. This is useful if there are variants which haven't been observed yet. You might want to watch the heatmap (and the amplicons on it) for early signs. But drawing curves that stay constantly at zero wouldn't be very useful).
-- _variants_pangolin_ - dictionary mapping short names to the official [PANGO lineages](https://cov-lineages.org/) that should be used during upload to [covSPECTRUM](https://cov-spectrum.ethz.ch/) (see: "_pangolin:_" fields in the `voc/`_*_`.yaml` description)
-- _amplicons_ - currently only a subset of all amplicons are listed on the heatmaps, they as specified here, including the mutations they are linking
+- _variants_pangolin_ - dictionary mapping short names to the official [PANGO lineages](https://cov-lineages.org/) that should be used during upload to [CoV-Spectrum](https://cov-spectrum.ethz.ch/) (see: "_pangolin:_" fields in the `voc/`_*_`.yaml` description)
+- _amplicons_proto_ - for each variant whose amplicons will be displayer on the heatmap, specifiy which of the tables to use
+  (currently, only one of the protocol can be displayed per heatmap)
+- mutation that are common in variants listed in _exclude_from_ will be filtered out from variants listed in _exclusive_list_
 
 
 ### Execution
@@ -217,11 +291,11 @@ It is possible to specify the path to search for the input files in the cell in 
 
   > **Note:** mutations that aren’t exclusive to a single variant are removed from the rarer variant, see [comments at the end](#comments-regarding-the-current-procedure)
 
-- Run remaining cells until end of section "Make data for covSPECTRUM".
+- Run remaining cells until end of section "Make data for CoV-Spectrum".
 
 ### Outputs
 
-- `ww_update_data_heatmap.json` - a file with uploadable data for covSPECTRUM that contains the heatmaps.
+- `ww_update_data_heatmap.json` - a file with uploadable data for CoV-Spectrum that contains the heatmaps.
 
 
 ## Generate the plot: Curves
@@ -240,24 +314,27 @@ The fourth notebook - `ww_smoothing_regression_cov.ipynb` - performs the Ridge r
 
 It is possible to specify the path to search for the input files in the cell in the section titled "Globals". It is similar to the previous notebook (`ww_heatmaps_cov.ipynb`).
 
+- _variants_not_reported_ lists variants which will be not part of the regression and will be removed before the ressampling
+- _rename_variants_ specify final renames to be performed before updloading (use this if you want to test the regression of multiple different definitions)
+
 ### Execution
 
 - Run all cells until the end of section "Prevalence Plots".
 - Inspect the generated heatmaps for any unexpected results.
 
-  > **Note:** the regression also displays a curve for unknown variants, defined by the complement of the other variants' heatmaps. But currently is not uploaded to covSPECTRUM, pending confirmation that its code would correctly handle it.
+  > **Note:** the regression also displays a curve for unknown variants, defined by the complement of the other variants' heatmaps.
 
 - Run remaining cells until end of section "Add Timeseries Data to Heatmap json File"
 
 
 ### Outputs
 
-- `ww_update_data_combined.json` - a file with uploadable data for covSPECTRUM that contains both the curves and the heatmaps.
+- `ww_update_data_combined.json` - a file with uploadable data for CoV-Spectrum that contains both the curves and the heatmaps.
 
 
 ## Upload
 
-The fifth notebook - `ww_cov_uploader.ipynb` - handles the upload onto covSPECTRUM itself
+The fifth notebook - `ww_cov_uploader.ipynb` - handles the upload onto CoV-Spectrum itself
 
 ### Input
 
@@ -273,7 +350,7 @@ In addition the actual upload itself requires database credentials. These are cu
 
 ### Outputs
 
-The curves are now load up on [covSPECTRUM](https://cov-spectrum.ethz.ch/story/wastewater-in-switzerland).
+The curves are now load up on [CoV-Spectrum](https://cov-spectrum.ethz.ch/story/wastewater-in-switzerland).
 
 # Comments regarding the current procedure
 
@@ -284,8 +361,8 @@ This would reduce the individual confidence of the mutation positions and show s
 
 The lowess smoothing is performed over a fraction corresponding to 20 days, in line with what the 1/3rd smoothing in the preprint was producing.
 
-As an additional measure to avoid outliers, mutations which aren’t exclusive to a single variant aren’t taken into account in B.1.351/beta/ZA and P.1/gamma/BR.
-E.g.: mutation nuc: A23063T (aa: N501Y) will not be used there as it is also present in B.1.1.7/alpha/UK and would artificially inflate the numbers.
+As an additional measure to avoid outliers, mutations which aren’t exclusive to a single variant aren’t taken into account in B.1.351/beta and P.1/gamma.
+E.g.: mutation nuc: A23063T (aa: N501Y) will not be used there as it is also present in B.1.1.7/alpha and would artificially inflate the numbers.
 Other similar signature mutations which do not follow the general trend of a variant are also filtered out.
 
 The variants delta/B.1.617.2, the other members of the B.1.617* family (.1 and .3) and to a lesser extent C.36.3 have mutations in common.
