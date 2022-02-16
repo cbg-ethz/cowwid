@@ -1,6 +1,6 @@
 ---
-Date:	2022-02-02
-Version:	0.7
+Date:	2022-02-15
+Version:	0.7.1
 ---
 # Wastewater reporting bioinformatics procedure
 
@@ -22,7 +22,7 @@ Sample data is processed using the same pipeline configuration as currently used
 > **Summary:** all the necessary setup is already contained in the [pangolin](https://github.com/cbg-ethz/pangolin) repository. The repository needs to be cloned with its submodules, and the user needs to provide a bioconda installation in `pangolin/miniconda3` with packages _snakemake-minimal_ and _mamba_
 
 The pipeline is configured as described in the repository [https://github.com/cbg-ethz/pangolin](https://github.com/cbg-ethz/pangolin) and its submodules.
-- branch: [master](https://github.com/cbg-ethz/pangolin/tree/master), tip: [f1f9fcb7088bf235bfe94145f5354999a9b420c4](https://github.com/cbg-ethz/pangolin/commit/f1f9fcb7088bf235bfe94145f5354999a9b420c4)
+- branch: [master](https://github.com/cbg-ethz/pangolin/tree/master), tip: [36fed5a89510372d384776d8ce714399521d65dd](https://github.com/cbg-ethz/pangolin/commit/36fed5a89510372d384776d8ce714399521d65dd)
 
 Only the setup of V-pipe and cojac are described here.
 
@@ -32,7 +32,7 @@ The V-pipe version provided by pangolin is set up following the same layout as p
 - `pangolin/miniconda3` - **user-provided** installation of [miniconda3](https://bioconda.github.io/user/install.html) with packages _[snakemake-minimal](https://bioconda.github.io/recipes/snakemake/README.html)_ and _[mamba](https://anaconda.org/conda-forge/mamba)_ installed (see link for installation instruction).
 - `pangolin/V-pipe` - installation of V-pipe as specified by the pangolin repository’s sub-module (simply checkout the submodule), namely:
   - repository: [https://github.com/cbg-ethz/V-pipe](https://github.com/cbg-ethz/V-pipe)
-  - branch: [rubicon](https://github.com/cbg-ethz/V-pipe/tree/rubicon), tip: [a6d8236fc965b9044b01d78ec132ed755fe9fac9](https://github.com/cbg-ethz/V-pipe/commit/a6d8236fc965b9044b01d78ec132ed755fe9fac9)
+  - branch: [rubicon](https://github.com/cbg-ethz/V-pipe/tree/rubicon), tip: [e7cfbc5b06b8d3c51fdf231e99e0f0884415c384](https://github.com/cbg-ethz/V-pipe/commit/e7cfbc5b06b8d3c51fdf231e99e0f0884415c384)
 - `pangolin/working` - working directory provided by the pangolin repository. Of note:
   - `pangolin/working/vpipe.config` - specific configuration used ([the virus-specific base configuration for SARS-CoV-2](https://github.com/cbg-ethz/V-pipe/blob/master/config/sars-cov-2.yaml) relies on [bwa](http://bio-bwa.sourceforge.net/) for alignment with reference [NC_045512](https://www.ncbi.nlm.nih.gov/nuccore/NC_045512) and [ShoRAH](https://github.com/cbg-ethz/shorah) for SNV and local haplotype calling. In addition, the resource parameters have been fine-tuned to allow the processing of very large cohorts).
   - `pangolin/working/`_*_`.bsub` - jobs used to perform the processing
@@ -110,7 +110,7 @@ A cojac version is provided by pangolin in this directory:
 
 - `pangolin/cojac`  - installation of cojac as specified by the pangolin repository’s sub-module (simply checkout the submodule), namely:
   - repository: [https://github.com/cbg-ethz/cojac](https://github.com/cbg-ethz/cojac)
-  - branch: [dev](https://github.com/cbg-ethz/cojac/tree/dev), tip: [ebbaa052a0378d70513df6aad734d6abe6fe28a4](https://github.com/cbg-ethz/cojac/commit/ebbaa052a0378d70513df6aad734d6abe6fe28a4)
+  - branch: [dev](https://github.com/cbg-ethz/cojac/tree/dev), tip: [7300b3ba5c8980717a65a6f8bed1d835f40c0674](https://github.com/cbg-ethz/cojac/commit/7300b3ba5c8980717a65a6f8bed1d835f40c0674)
 
 ### Inputs
 
