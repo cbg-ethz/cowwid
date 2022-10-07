@@ -102,7 +102,7 @@ class KernelDeconv:
         self.confint = confint
         self.variant_names = X.columns
 
-    def deconv(self, date, min_tol=1e-10):
+    def deconv(self, date, min_tol=1e-10, renormalize=True):
         """
         compute kernel deconvolution centered on specific date, returns fitted regression object
         """
@@ -118,15 +118,22 @@ class KernelDeconv:
             kvals.values[kvals.values >= min_tol],
         )
 
+        # renormalize
+        if renormalize:
+            regfit.fitted = regfit.fitted / np.sum(regfit.fitted)
+
+        # compute and return confint
         regfit.conf_band = self.confint.confint(
-            self.X.values[kvals.values >= min_tol, :]
+            X=self.X.values[kvals.values >= min_tol, :]
             * np.expand_dims(kvals.values[kvals.values >= min_tol], 1),
-            regfit.fitted,
+            coefs=regfit.fitted,
+            y=self.y.values.flatten()[kvals.values >= min_tol],
+            kvals=kvals.values[kvals.values >= min_tol]
         )
 
         return regfit
 
-    def deconv_all(self, min_tol=1e-10):
+    def deconv_all(self, min_tol=1e-10, renormalize=True):
         """
         compute kernel deconvolution for all dates
 
@@ -145,7 +152,7 @@ class KernelDeconv:
         lower = []
         upper = []
         for date in self.dates.unique():
-            deconv = self.deconv(date, min_tol)
+            deconv = self.deconv(date, min_tol, renormalize)
             fitted.append(deconv.fitted)
             loss.append(deconv.loss)
             lower.append(deconv.conf_band["lower"])
