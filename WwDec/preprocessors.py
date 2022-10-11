@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import sys
 
 
 class DataPreprocesser:
@@ -32,6 +33,7 @@ class DataPreprocesser:
     ):
         """General preprocessing steps"""
         # rename columns
+        assert len(variants_pangolin.values()) == len(set(variants_pangolin.values())), f"duplicate values in:\n{variants_pangolin}"
         self.df_tally = self.df_tally.rename(columns=variants_pangolin)
         # drop non reported variants
         self.df_tally = self.df_tally.drop(variants_not_reported, axis=1, errors="ignore")
@@ -53,8 +55,18 @@ class DataPreprocesser:
             self.df_tally = self.df_tally[~(self.df_tally["base"] == "-")]
 
         # df_data = df_data[df_data.columns.difference(['pos', 'gene', 'base'], sort=False)]
+
+        # delete lines with mutation of the type that we want to delete (to_drop)
+        # e.g.: remove all 'subset' mutations
+        absentcol = set(variants_list) - set(self.df_tally.columns)
+        if len(absentcol):
+            # check for missing
+            print(f"Warning, variants_list's {absentcol} is not present in columns {self.df_tally.columns}", file=sys.stderr)
         for v in variants_list:
-            self.df_tally = self.df_tally[~self.df_tally[v].isin(to_drop)]
+            if v in self.df_tally.columns:
+                drop_mask=self.df_tally[v].isin(to_drop)
+                if any(drop_mask):
+                   self.df_tally = self.df_tally[~drop_mask]
         # drop index
         self.df_tally = self.df_tally.reset_index(drop=True)
 
