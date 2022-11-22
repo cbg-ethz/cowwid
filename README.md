@@ -1,12 +1,42 @@
 ---
-Date:	2022-02-15
-Version:	0.7.1
+Date:	2022-11-15
+Version:	0.9
 ---
 # Wastewater reporting bioinformatics procedure
 
+This repository os our _**Standard of Procedure**_, its puprose is to **document the current procedure** used to process wastewater.
+
+Although it can transitionnally contain segments of code, these are merely notebooks showing temporary procedure in place (e.g.: uploading JSON formatted data to Cov-Spectrum).
+Any computation (e.g.: variant deconvolution) will eventually be integrated into the software component we rely upon.
+
+The current software includes:
+
+ - [V-pipe](https://github.com/cbg-ethz/V-pipe) : Our main Virus NGS Analysis workflow
+ - [cojac](https://github.com/cbg-ethz/cojac) : Tools for early detection based on combination of mutations
+ - [LolliPop](https://github.com/cbg-ethz/LolliPop) : Tools for kernel-based deconvolution of variants
+
+
+
+# CAVEAT: Pre-release
+
+We're currenlty in the process of integrating most of the processing into V-pipe. 
+A prototype of this integration is available in branch [ninjaturtles](https://github.com/cbg-ethz/V-pipe/tree/ninjaturtles).
+This prototype still contains hard-coded value.
+
+A config file-based version is coming next.
+
+
+
 # Introduction
 
-This readme file describes the procedure which is used since 2021-06-01 to prepare the wastewater-based SARS-CoV-2 prevalence display on [CoV-Spectrum](https://cov-spectrum.ethz.ch/story/wastewater-in-switzerland) as used on the page [Surveillance of SARS-CoV-2 genomic variants in wastewater](https://bsse.ethz.ch/cbg/research/computational-virology/sarscov2-variants-wastewater-surveillance.html). The main reference is [doi:10.1101/2021.01.08.21249379](https://www.medrxiv.org/content/10.1101/2021.01.08.21249379).
+This readme file describes the procedure which is used since 2021-06-01 to prepare the wastewater-based SARS-CoV-2 prevalence display on [CoV-Spectrum](https://cov-spectrum.ethz.ch/story/wastewater-in-switzerland) as used on the page [Surveillance of SARS-CoV-2 genomic variants in wastewater](https://bsse.ethz.ch/cbg/research/computational-virology/sarscov2-variants-wastewater-surveillance.html). The main references are [doi:10.1038/s41564-022-01185-x](https://doi.org/10.1038/s41564-022-01185-x) (preprint: [doi:10.1101/2021.01.08.21249379](https://www.medrxiv.org/content/10.1101/2021.01.08.21249379)), and  [doi:10.1101/2022.11.02.22281825](https://doi.org/10.1101/2022.11.02.22281825).
+
+It relies on V-pipe for most of the processing. The key steps are:
+
+- [_Base processing_](#Base_processing): reads QC, alignments, etc. classic SARS-CoV-2 pipeline
+- [_Cooccurrence analysis_](#Coocurrence_analysis): detect variats early using cooccurrence of mutations.
+- [_Wastewater analysis_](#Wastewater_analysis): build variant curves, by deconvoluting for the variants found in the previous step.
+
 
 
 # Base processing
@@ -15,7 +45,6 @@ Sample data is processed using the same pipeline configuration as currently used
 
 *[NGS]: Next Generation Sequencing 
 *[S3C]: Swiss SARS-CoV-2 Sequencing Consortium
-
 
 ## Installation
 
@@ -40,7 +69,6 @@ The V-pipe version provided by pangolin is set up following the same layout as p
 *[SNV]: Single Nucleotide Variant
 
 This V-pipe setup will store snakemake environments in `pangolin/snake-envs`. It is possible to pre-download them in advance by running `cd pangolin/V-pipe; ./vpipe --jobs 16 --conda-create-envs-only` (see [tutorial](https://cbg-ethz.github.io/V-pipe/tutorial/sars-cov2/#running-v-pipe-on-the-cluster)). On our cluster, this is performed by the command `pangolin/working/create_envs` which also takes care of HTTP proxy.
-
 
 ## Processing raw-reads with V-pipe
 
@@ -91,254 +119,279 @@ Basel has another schema:
 Ba210449_2021-11-10
 ```
 
+- These name can be automatically parsed by regular expressions defined inside `regex.yaml`.
+- A `ww_locations.tsv` look-up table maps WWTP codes to fullnames.
+
+(see [Wastewater analysis](#Wastewater_analysis) below).
+
 ### Configuration
 
 The configuration for running V-pipe resides in the file `pangolin/working/vpipe.config`. The configuration as used presently in the procedure is provided in the repository pangolin as mentioned in [installation](#installation).
 
 ### Execution
 
-In the directory `pangolin/working`, submit the job `vpipe-noshorah.bsub` to the cluster.
+In the directory `pangolin/working`, submit the job `vpipe-noshorah.bsub` (LSF) or `vpipe-noshorah.sbatch` (SLURM) to the cluster.
 
 This will run the initial steps of V-pipe but stop before calling SNV and local haplotypes with ShoRAH.
 
 
+
 # Coocurrence analysis
 
-> **Note:** cojac isn't automatized yet as part of pangolin or V-pipe and needs to be trigered manually started.
+> **Note:** cojac _**is now**_ part of V-pipe.
+
+## Installation
+
+> **Note:** this branch currenlty has hard-coded value and is not easily portable to other deployment without manually editing the rules inside [signatures.smk](https://github.com/cbg-ethz/V-pipe/blob/ninjaturtles/workflow/rules/signatures.smk)
+
+Processing uses the V-pipe.
+ - branch: [ninjaturtles](https://github.com/cbg-ethz/V-pipe/tree/ninjaturtles), tip: [c2ac8adac6b027f5904e870239279f63268b3755](https://github.com/cbg-ethz/V-pipe/commit/c2ac8adac6b027f5904e870239279f63268b3755)
 
 A cojac version is provided by pangolin in this directory:
 
 - `pangolin/cojac`  - installation of cojac as specified by the pangolin repository’s sub-module (simply checkout the submodule), namely:
   - repository: [https://github.com/cbg-ethz/cojac](https://github.com/cbg-ethz/cojac)
-  - branch: [dev](https://github.com/cbg-ethz/cojac/tree/dev), tip: [7300b3ba5c8980717a65a6f8bed1d835f40c0674](https://github.com/cbg-ethz/cojac/commit/7300b3ba5c8980717a65a6f8bed1d835f40c0674)
+  - branch: [dev](https://github.com/cbg-ethz/cojac/tree/dev), tip: [d4aaa470866876c6c6f66e526e61503ba65a8e44](https://github.com/cbg-ethz/cojac/commit/d4aaa470866876c6c6f66e526e61503ba65a8e44)
+
+Because the above is still in an experimental state, we run in a separate working area (`work-vp-test/` instead of `working/`). Scripts assist handling these directories.
+
+## Analysing cooccurrence with V-pipe
+
+The following document assumes user have already performed the base analysis with V-pipe, but because Snakemake is depedency-based, it is also possible to automatically regenerate any intermediate output.
 
 ### Inputs
 
-- `/pangolin/working/samples.wastewateronly.tsv` - TSV table of the samples (the subset samples.tsv with wastewater samples)
-- `/pangolin/cojac/voc/`*`.yaml` - definition of the variants
-- `/pangolin/cojac/cojac/nCoV-2019.insert.V3.bed` - amplicon positions for ARTIC V3
-- `/pangolin/cojac/cojac/SARS-CoV-2.insert.V4.txt` - amplicon positions for ARTIC V3
-- `/pangolin/amplicons.v3.yaml` - amplicon description (generated from cojac's definitions) and
-- `/pangolin/amplicons.v4.yaml`
+- `/pangolin/work-vp-test/samples.wastewateronly.tsv` - TSV table of the samples (the subset samples.tsv with wastewater samples)
+- `/pangolin/work-vp-test/reference/voc/`_*_`.yaml` - definition of the variants
+  - a copy of this collection of YAML is in the [`voc/` subdirectory](voc/)
+  - TODO procedure for creating and curating new one
+- `/pangolin/work-vp-test/reference/primers.yaml` and `/pangolin/work-vp-test/reference/primers/` : multiplex PCR amplicon definitions
+  - a copy of this is provided in [SARS-CoV-2 specific resource packaged as part of V-pipe](https://github.com/cbg-ethz/V-pipe/tree/master/resources/sars-cov-2)
+  - at the time of writing, this includes ARTIC protocol version 3, 4, and 4.1
+  - documentation about amplicons is found in [section _amplicons_ of the config's README file](https://github.com/cbg-ethz/V-pipe/tree/master/config#amplicon-protocols)
+- `/pangolin/work-vp-test/work-vp-results/`_*_`/`_*_`/alignment/REF_aln_trim.bam` - Alignments generated by V-pipe (see base processing above).
+  - Note that analysis is run on the trimmed alignments for convenience, but due to its nature (it's looking at the exact amplicons of the multiplex PCR), it's not affected by trimming.
 
 ### Execution
 
-In the directory `pangolin`, there is a tool called `ww-launcher` (that can assist in submit the job `ww.bsub` to the cluster).
+> **Summary:** actual processing is handled by V-pipe, here we document the exact commands that we use locally on our cluster.
 
-```console
-# ./ww-launcher -h
-Usage: ./ww-launcher [ -m ] [-b <BATCH>] [ -p <PROTO> ]
-options:
--b <BATCH>   only run on this batch
--p <PROTO>   protocol used
-             [default: v4]
--m           mass-rebuild using new definition in test/cojac/
-             (use -b to only test new def on single batch)
--h           print this help message and exit
-```
+Because the above is still in an experimental state, we run in a separate working area (`work-vp-test/` instead of `working/`).
 
-The submitted job(s) will in turn run the cojac's `cooc-mutbamscan` and `cooc-tabmut` on all samples listed in the TSV
+In the directory `pangolin`, there is a tool called `cowabunga.sh` (that can assist in preparing data for running V-pipe).
 
-#### Protocols
+- run `./cowabunga.sh autoaddwastewater`
+  - this adds the wastewater samples at top of file `/pangolin/work-vp-test/samples.wastewateronly.tsv`
+- run `./cowabunga.sh bring_results`
+  - this creates the necessary hardlinks inside `/pangolin/work-vp-test/results` so that V-pipe can reuse the alignments previously done as part of the base procesing.
+- submit V-pipe to the cluster with SLURM:
+  - for interactive output on the terminal:
+    ```bash
+    cd work-vp-test/
+    srun --pty --job-name=COWWID-vpipe --mem-per-cpu=4096 --mail-type=END --mail-user="ivan.topolsky@bsse.ethz.ch" --time=23:00:00 -- vpipe-test.sbatch 
+    ```
+  - for batch submisison:
+    ```bash
+    cd work-vp-test/
+    sbatch vpipe-test.sbatch 
+    ```
+  - **Note:** this will run both the cooccurrence and the deconvolution, see content of `vpipe-test.sbatch`:
+    ```bash
+    …
+    exec ./vpipe --profile ${SNAKEMAKE_PROFILE} --restart-times=0 \
+        allCooc tallymut deconvolution \
+        --groups sigmut=group0 cooc=group1 \
+        --group-components group0=10 group1=5
+    ```
 
-The `ww-launcher` script now maintains separate set of files for ARTIC V3 and V4 protocols, distinguishied by the `.v3.` and `.v4.` part in their output name (see below).
+### Output
+  
+- `/pangolin/work-vp-test/variants/amplicons.v`_*_`.yaml` - amplicon description (generated from cojac's definitions) 
+- `/pangolin/work-vp-test/results/`_*_`/`_*_`/signatures/cooc.yaml` - internal cojac format with coocurrences
 
-#### Subset only
+## Interpretation of the results
 
-To avoid rerunning on the whole set of samples, it possible to specify the latest sequencing batch
-(with option `-b`) and the sequencing protocol (option `-p`) that were used
+### Input
+
+First obtain all the cooccurrences of the most recent amplicon protocol:
 
 ```bash
-./ww-launcher -b "20210924_HK7YWDRXY" -p "v3"
+./cowabunga.sh fetch_cooc v41
 ```
 
-This will:
+This will generate `work-vp-test/cooc.v41.yaml`
 
- - use the pre-computed amplicons definition from `/pangolin/amplicons.v3.yaml`
- - automatically update `/pangolin/working/samples.wastewateronly.tsv` and
-   `/pangolin/working/samples.wastewateronly.v3.tsv`
- - append that batch's cojac output to `/pangolin/working/ww-cooc.v3.yaml`
+### Execution
 
+Then refer to the [README.md](https://github.com/cbg-ethz/cojac/tree/dev#display-data-on-terminal) to display output:
 
-#### Test and mass-rebuild
+```bash
+# on the terminal of your laptop:
+cojac cooc-colourmut --amplicons amplicons.v41.yaml --yaml cooc.v41.yaml | less -SR
 
-When testing a new version of cojac with, e.g., new definition,
-it is possible to install a test version in `test/cojac/`.
+# on our cluster
+mamba acticate 
+test/cojac-wrapper cooc-colourmut --amplicons work-vp-test/variants/amplicons.v41.yaml --yaml work-vp-test/cooc.v41.yaml | less -SR
+```
 
-Using the `-m` option will attempt re-running all samples using the new versions.
+**Advices:**
 
-Samples will be processed as ARTIC V3 or V4, depending on whether they are listed in `/pangolin/working/samples.wastewateronly.v3.tsv` or `/pangolin/working/samples.wastewateronly.v4.tsv`.
+- Based on the curate information gathered from the background on Cov-Spectrum, you might want to edit and make a subset out of amplicon.v41.yaml that concentrates on the interesting amplicons and mutations for the variants you are seeking to detect early.
+- `less -SR` will enable horizontal scrolling and will support the ANSI colour codes
+- alternatively from the terminal output, you could try pubmut for other table display formats, or tabmut for tabular data that you could ingest into your favourite display tool
 
-For v3:
- - `/pangolin/cojac/cojac/nCoV-2019.insert.V3.bed` - amplicon positions will be used.
+### Output
 
-And these files will be generated:
- - `/pangolin/amplicons.new.v3.yaml` - new amplicon definition generated from `test/cojac/voc/`_*_`.yaml`
- - `/pangolin/working/ww-new-v3-`_batch_`.yaml` - (per batch parallel output)
- - `/pangolin/working/ww-new-v3.yaml`  internal cojac format with coocurrences
- - `/pangolin/working/ww-new-v3.csv` - table for downstream analysis
+Manually edit and adapt `work-vp-test/variants.yaml` and `work-vp-test/var_dates.yaml` to require deconvolution to include these newly detected variants.
 
-For v4:
- - `/pangolin/cojac/cojac/SARS-CoV-2.insert.V4.txt` - amplicon positions will be used.
-
-And these files will be generated:
- - `/pangolin/amplicons.new.v4.yaml` - new amplicon definition generated from `test/cojac/voc/`_*_`.yaml`
- - `/pangolin/working/ww-new-v4-`_batch_`.yaml` - (per batch parallel output)
- - `/pangolin/working/ww-new-v4.yaml`  internal cojac format with coocurrences
- - `/pangolin/working/ww-new-v4.csv` - table for downstream analysis
-
-After the jobs launched by `./ww-launcher` have finished, check the content of the above generated files,
-and if happy with the result, move these generated files into:
-
- - the pre-computed amplicons definition in `/pangolin/amplicons.v3.yaml` and `/pangolin/amplicons.v4.yaml`
- - the output files listed below
- - (you can safely delete the per-batch parallel output)
-
-### Outputs
-
-- `working/ww-cooc.v3.yaml` - internal cojac format with coocurrences
-- `working/ww-cooc.v3.csv` - table for downstream analysis
-- `working/ww-cooc.v4.yaml` - same but with ARTIC V4
-- `working/ww-cooc.v4.csv`
 
 
 # Wastewater analysis
 
-The analysis of the output of V-pipe relies on manually executing Jupyter notebooks.
+> **Note:** 
+> - LolliPop _**is now**_ part of V-pipe.
+> - Due to issues, we are temporarily building the curves with a Notebook instead of the command-line interface of LolliPop
 
-The conda environment specifying the kernel used to execute them is in `pangolin/cojac/notebooks/conda-bio1.yaml`.
+## Installation
 
+> **Note:** this branch currenlty has hard-coded value and is not easily portable to other deployment without manually editing the rules inside [signatures.smk](https://github.com/cbg-ethz/V-pipe/blob/ninjaturtles/workflow/rules/signatures.smk)
 
-## Mutation list
+Processing uses the V-pipe.
+ - branch: [ninjaturtles](https://github.com/cbg-ethz/V-pipe/tree/ninjaturtles), tip: [c2ac8adac6b027f5904e870239279f63268b3755](https://github.com/cbg-ethz/V-pipe/commit/c2ac8adac6b027f5904e870239279f63268b3755)
 
-The first notebook - `pangolin/cojac/notebooks/snv_count_wastewater3.ipynb` - isused to build the list of signature mutations for the variants of concern.
+A LolliPop version is temporarily installed iside:
 
-### Input
+- `pangolin/test/LolliPop`:
+  - repository: [https://github.com/cbg-ethz/cojac](https://github.com/cbg-ethz/LolliPop)
+  - branch: [main](https://github.com/cbg-ethz/LolliPop/tree/main), tip: [6b4495e1fdc6824ecdccfef866bbd2b11b200105](https://github.com/cbg-ethz/LolliPop/commit/6b4495e1fdc6824ecdccfef866bbd2b11b200105)
 
-- `/pangolin/cojac/voc/`*`.yaml` - definition of the variants
-- `/pangolin/working/references/gffs/Genes_NC_045512.2.GFF3` - genes table
+Because the above is still in an experimental state, we run in a separate working area (`work-vp-test/` instead of `working/`). Scripts assist handling these directories.
 
-### Configuration
+## Configuration
 
-It is possible to specify the path to search for the input files in the cell in the section titled "Globals".
+You still need to update manually `work-vp-test/variants.yaml` and `work-vp-test/var_dates.yaml` and re-run V-pipe if coocurrences have revealed early presence of another variant.
+
+Configuration file `regex.yaml` defines regular expressions that help parse the samples names as per section [Processing raw-reads with V-pipe](#Processing_raw-reads_with_V-pipe) above.
+
+- `sample` (and optionnally `batch`) define regular expressions that are run against the first (and optionnally second) column of V-pipe's `samples.tsv`. They define the following named-groups
+  - `location`: this named-group gives the code for the location (e.g.: Ewag's number code, `Ba`, `KLZH`, etc.)
+  - `year`: year (in `YYYY` or `YY` format. `YY` are automatically expanded to `20YY` -  Yes, I am optimistic with the duration of this pandemic. Or pessimistic with long term use of V-pipe after the turn of century).
+  - `month`: month
+  - `day`: day
+  - `date`: an alternative to the year/month/day groups, if dates aren't in a standard format.
+  - regex are parsed with the Python regex library, and multiple named groups can use the same name.
+    You can thus have a contstruction where you use `|` to give multiple alternative as long as each provide named-groups `location` and either  `year`, `month`, and `day` or `date`:
+     ```regex
+     (?:(?P<location>\d+)_(?P<year>20\d{2})_(?:(?:(?P<month>[01]?\d)_(?P<day>[0-3]?\d))|(?:R_(?P<repeat>\d+))))|^(?:(?P<location>KLZHCo[vV])(?P<year>\d{2})(?P<month>[01]?\d)(?P<day>[0-3]?\d)(?:_(?P<location_extra>\w+))?)|^(?:(?P<location>B[aA])(?P<BAsam>\d{6})(?:[-_](?P<year>20\d{2})-(?P<month>[01]?\d)-(?P<day>[0-3]?\d))?)
+     ``` 
+- `datefmt`: [strftime/strptime format string](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes) to be used on regex named group `date` (e.g.: use `"%Y%m%d"` to parse YYYYMMDD).
+  -  This is most useful for date formats that don't split nicely into the ` year`, `month`, and `day` regex  named groups: e.g. if your date format uses week number, day of the week, or day of year.
+     In that case, write a regular expression that provides a named-group `date`, and then use, e.g., `%W` or `%-d` in your ` datefmt`.
+
+A look-up table `ww_locations.tsv` maps the location code (see `location` regex named group in the previous file) to their full description.
+
+## Analysing wastewater with V-pipe
+
+The following document assumes user have already performed the base analysis and the cooccurrence with V-pipe, but because Snakemake is depedency-based, it is also possible to automatically regenerate any intermediate output.
+
+### Inputs
+
+- `/pangolin/work-vp-test/samples.wastewateronly.tsv` - TSV table of the samples (the subset samples.tsv with wastewater samples)
+- `/pangolin/work-vp-test/reference/voc/`_*_`.yaml` - definition of the variants
+  - a copy of this collection of YAML is in the [`voc/` subdirectory](voc/)
+  - TODO procedure for creating and curating new one
+- `/pangolin/work-vp-test/work-vp-results/`_*_`/`_*_`/alignment/basecnt.tsv.gz` - Basecounts (pileup-like coverage plot) generated by V-pipe (see base processing above).
+- `/pangolin/working/references/gffs/Genes_NC_045512.2.GFF3` - genes table  (used to add Genenames into the tally mut).
 
 ### Execution
 
-- Run the cells until the end of section "Add genes"
+> **Summary:** actual processing is handled by V-pipe, here we document the exact commands that we use locally on our cluster.
 
-### Outputs
+Because the above is still in an experimental state, we run in a separate working area (`work-vp-test/` instead of `working/`).
 
-- `mutlist.txt` - a table listing the mutations to be searched
+In the directory `pangolin`, there is a tool called `cowabunga.sh` (that can assist in preparing data for running V-pipe).
 
-
-## Building the variant mutation table
-
-The second notebook - `pangolin/cojac/notebooks/mut-table.ipynb` - gathers the output of V-pipe and builds a table listing mutations present in the sample.
-
-### Input
-
-- `working/`_*_`/`_*_`/alignment/basecnt.tsv.gz` - Basecounts generated by V-pipe
-- `working/samples.wastewateronly.tsv` - TSV table of the samples (the subset samples.tsv with wastewater samples)
-- `ww_plants.tsv` - table mapping the wwtp code to the city names.
-- `mutlist.txt` - list of mutation generated by [previous step](#mutation-list)
-
-### Configuration
-
-It is possible to specify the path to search for the input files in the cell in the section titled "Globals".
-
-### Execution
-
-- Run the cells until the end of section "Processing"
-- Then _skip_ section "Process ShoRAH-filtered data" - as ShoRAH is currently temporarily disabled
-- Then run the cells in the section "Process unfiltered data"
+- run `./cowabunga.sh autoaddwastewater`
+  - this adds the wastewater samples at top of file `/pangolin/work-vp-test/samples.wastewateronly.tsv`
+- run `./cowabunga.sh bring_results`
+  - this creates the necessary hardlinks inside `/pangolin/work-vp-test/results` so that V-pipe can reuse the alignments previously done as part of the base procesing.
+- submit V-pipe to the cluster with SLURM:
+  - for interactive output on the terminal:
+    ```bash
+    cd work-vp-test/
+    srun --pty --job-name=COWWID-vpipe --mem-per-cpu=4096 --mail-type=END --mail-user="ivan.topolsky@bsse.ethz.ch" --time=23:00:00 -- vpipe-test.sbatch 
+    ```
+  - for batch submisison:
+    ```bash
+    cd work-vp-test/
+    sbatch vpipe-test.sbatch 
+    ```
+  - **Note:** this will run both the cooccurrence and the deconvolution, see content of `vpipe-test.sbatch`:
+    ```bash
+    …
+    exec ./vpipe --profile ${SNAKEMAKE_PROFILE} --restart-times=0 \
+        allCooc tallymut deconvolution \
+        --groups sigmut=group0 cooc=group1 \
+        --group-components group0=10 group1=5
+    ```
 
 ### Output
 
-- `tallymut_line.tsv` - table of all variant-characteristic mutations found
+- `/pangolin/work-vp-test/variants/tallymut.tsv.zstd` - table of all variant-characteristic mutations found
+- `/pangolin/work-vp-test/variants/deconvolute.tsv.zstd`  - output of the deconvolution
+
+> **Note** thre are issue with the error margins generated by the current deconvolution methods
 
 
 ## Generate the plot: Heatmaps
 
-The third notebook - `ww_heatmaps_cov.ipynb` - generates the heatmaps plots.
+**NOTE** since switching to the exhaustive mutation list, the mutaiton heatmap display has become unusable and is not generated anymore.
+
+**TODO** better visualisation of the presence of variants.
+
+
+## Interpretation of results
+
+> **Note** thre are issue with the error margins generated by the current deconvolution methods directly setup inside V-pipe
+
+Notebook `WsSmoothing_legacy.ipynb` is temporarily used to do a bootstrap-based deconvolution using the files output by V-pipe.
+
+> **Note:** unlike the notebook `pangolin/cojac/notebooks/ww_smoothing.ipynb` used in the article, posterior probabilities of the local haplotype generated by ShoRAH are not taken into account, and the curves are built using a kernel based deconvolution which is both more robust against variants that share mutations in their exhaustive lists, and able to leverage the time component to  compensate the extreme over-dispestion of typical wastewater samples.
 
 ### Input
 
-- `tallymut_line.tsv` - table of all variant-characteristic mutations generated by the previous notebook.
-- `working/ww-cooc.v3.csv` - table with coocurrences in samples processed with ARTIC V3
-- `working/amplicons.v3.yaml` - amplicon definitions used to create the cooccurrence table
-- `working/ww-cooc.v4.csv` - same with ARTIC V4
-- `working/amplicons.v4.yaml`
-
-> **Note:** unlike the notebook `pangolin/cojac/notebooks/ww_smoothing.ipynb` used in the article, posterior probabilities of the local haplotype generated by ShoRAH are not taken into account presently.
+- `./work-vp-test/variants//tallymut.tsv.zst` - table of all variant-characteristic mutations generated by V-pipe
 
 ### Configuration
 
-It is possible to specify the path to search for the input files in the cell in the section titled "Globals". In addition, the following key parameters are set:
+It is possible to specify the path to search for the input files in the cell in the section titled "Globals".
 
 - _cities_list_ - list of the city names to be plotted (as specified in table `ww_plants.tsv` during the [previous step](#building-the-variant-mutation-table)).
-- _variants_list_ - list of short names to be plotted (as specified in the "_short:_" field of the `voc/`_*_`.yaml` descriptions).
-- _variants_list_upload_ - list of short names to be plotted and updated (it is possible to specify only a subset to be uploaded. This is useful if there are variants which haven't been observed yet. You might want to watch the heatmap (and the amplicons on it) for early signs. But drawing curves that stay constantly at zero wouldn't be very useful).
-- _variants_pangolin_ - dictionary mapping short names to the official [PANGO lineages](https://cov-lineages.org/) that should be used during upload to [CoV-Spectrum](https://cov-spectrum.ethz.ch/) (see: "_pangolin:_" fields in the `voc/`_*_`.yaml` description)
-- _amplicons_proto_ - for each variant whose amplicons will be displayer on the heatmap, specifiy which of the tables to use
-  (currently, only one of the protocol can be displayed per heatmap)
-- mutation that are common in variants listed in _exclude_from_ will be filtered out from variants listed in _exclusive_list_
-
-
-### Execution
-
-- Run all cells until the end of section "Heatmaps".
-- Inspect the generated heatmaps for any unexpected results.
-
-  > **Note:** mutations that aren’t exclusive to a single variant are removed from the rarer variant, see [comments at the end](#comments-regarding-the-current-procedure)
-
-- Run remaining cells until end of section "Make data for CoV-Spectrum".
-
-### Outputs
-
-- `ww_update_data_heatmap.json` - a file with uploadable data for CoV-Spectrum that contains the heatmaps.
-
-
-## Generate the plot: Curves
-
-The fourth notebook - `ww_smoothing_regression_cov.ipynb` - performs the Ridge regression, lowess smoothing and generates the plots.
-
-> **Note:** unlike the notebook `pangolin/cojac/notebooks/ww_smoothing.ipynb` used in the article, posterior probabilities of the local haplotype generated by ShoRAH are not taken into account and the curves are built using a Ridge regression which is more robust against variants that share mutations in their signature.
-
-
-### Input
-
-- `tallymut_line.tsv` - table of all variant-characteristic mutations generated by the previous notebook.
-- `ww_update_data_heatmap.json` - uploadable heatmaps, to which the this notebook will add the curves.
- 
-### Configuration
-
-It is possible to specify the path to search for the input files in the cell in the section titled "Globals". It is similar to the previous notebook (`ww_heatmaps_cov.ipynb`).
-
+- _variants_list_ - list of [PANGO lineages](https://cov-lineages.org/) plotted (as specified in the "_pangolin:_" field of the `voc/`_*_`.yaml` descriptions).
+- _variants_pangolin_ - dictionary mapping short names to the official pango lineages (see: "_pangolin:_" and "_short:_" fields in the `voc/`_*_`.yaml` description)
 - _variants_not_reported_ lists variants which will be not part of the regression and will be removed before the ressampling
-- _rename_variants_ specify final renames to be performed before updloading (use this if you want to test the regression of multiple different definitions)
+- _start_date_:  first  date for the deconvolution
+- _to_drop_: category of mutation to skip from tallymut (e.g.: subset),
+- _locations_list_ (fomerly _cities_list_): full names of the locations for which to generate curves (see right column of `ww_locations.tsv`).
 
 ### Execution
 
-- Run all cells until the end of section "Prevalence Plots".
-- Inspect the generated heatmaps for any unexpected results.
+- Run all cells until the end of section "covSPECTRUM export".
+- Inspect the plots generated by the Notebook.
 
-  > **Note:** the regression also displays a curve for unknown variants, defined by the complement of the other variants' heatmaps.
+## Output
 
-- Run remaining cells until end of section "Add Timeseries Data to Heatmap json File"
-
-
-### Outputs
-
-- `ww_update_data_combined.json` - a file with uploadable data for CoV-Spectrum that contains both the curves and the heatmaps.
-
+- `ww_update_data_smooth_kernel_lin.json`: output generated with the fast linear.
+- `ww_update_data_smooth_kernel_rob.json`: robust full deconvolution
 
 ## Upload
 
-The fifth notebook - `ww_cov_uploader.ipynb` - handles the upload onto CoV-Spectrum itself
+Notebook - `ww_cov_uploader.ipynb` - handles the upload onto CoV-Spectrum itself
 
 ### Input
-
-- `ww_update_data_combined.json` - the combination of both the curves and the heatmaps.
+- `ww_update_data_heatmap.json` - a file with uploadable data for CoV-Spectrum that contains the heatmaps.
+  - Note that this file isn't updated anymore, due to the excessively long exhaustive list breaking the output.
+- `ww_update_data_smooth_kernel_rob.json`: robust full deconvolution
 
 In addition the actual upload itself requires database credentials. These are currently retrieved from `~/.netrc` standard Unix credential storage, but alternative methods are commented-out in the cells under the "Upload to Cov-Spectrum" section.
 
@@ -352,22 +405,17 @@ In addition the actual upload itself requires database credentials. These are cu
 
 The curves are now load up on [CoV-Spectrum](https://cov-spectrum.ethz.ch/story/wastewater-in-switzerland).
 
+
+
 # Comments regarding the current procedure
 
-Unlike the pre-print [doi:10.1101/2021.01.08.21249379](https://www.medrxiv.org/content/10.1101/2021.01.08.21249379), the current procedure skips running ShoRAH.
+Due to the excessively long list of mutations generated from Cov-Spectrum, and the excessively complex amplicon-cooccurrence that results of it, heatmaps aren't displayed anymore as they are unreadable. We are working toward fixing this.
 
-This would reduce the individual confidence of the mutation positions and show some low frequency noise in the heatmaps, but as the curves are generated by combining the mean of multiple mutation sites the final curves still display a signal of visually similar quality to the pre-print.
-
-
-The lowess smoothing is performed over a fraction corresponding to 20 days, in line with what the 1/3rd smoothing in the preprint was producing.
+Unlike the pre-print [doi:10.1101/2021.01.08.21249379](https://www.medrxiv.org/content/10.1101/2021.01.08.21249379), the current procedure skips running ShoRAH:  Instead of trying to build confidence at the level of single mutation, current method in LolliPop relies instead on a kernel-based deconvolution that enables us to leverage the time component and gives us higher confidence in our call despite drop-outs and extreme dispestion of data.
 
 As an additional measure to avoid outliers, mutations which aren’t exclusive to a single variant aren’t taken into account in B.1.351/beta and P.1/gamma.
 E.g.: mutation nuc: A23063T (aa: N501Y) will not be used there as it is also present in B.1.1.7/alpha and would artificially inflate the numbers.
 Other similar signature mutations which do not follow the general trend of a variant are also filtered out.
-
-The variants delta/B.1.617.2, the other members of the B.1.617* family (.1 and .3) and to a lesser extent C.36.3 have mutations in common.
-Amplicons which are specific to delta/B.1.617.2 on one hand, and to other members of the B.1.617* family (.1 and .3) on the other hand are displayed on the heatmaps and help distinguishing them.
-The computation of the curves now uses a Ridge regression which is more robust against variants that share mutations in their signature.
 
 'Undetermined' is defined by the absence of signature mutations, thus it doesn't have its own heatmap (it is defined by the complement of all other heatmaps).
 
