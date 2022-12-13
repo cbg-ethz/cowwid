@@ -1,6 +1,6 @@
 ---
-Date:	2022-11-15
-Version:	0.9
+Date:	2022-12-12
+Version:	0.9.1
 ---
 # Wastewater reporting bioinformatics procedure
 
@@ -242,7 +242,7 @@ test/cojac-wrapper cooc-colourmut --amplicons work-vp-test/variants/amplicons.v4
 
 ### Output
 
-Manually edit and adapt `work-vp-test/variants.yaml` and `work-vp-test/var_dates.yaml` to require deconvolution to include these newly detected variants.
+Manually edit and adapt `work-vp-test/variants.yaml` and `work-vp-test/var_dates.yaml` to require deconvolution to include these newly detected variants (see next section "Wastewater_analysis").
 
 
 
@@ -271,6 +271,16 @@ Because the above is still in an experimental state, we run in a separate workin
 
 You still need to update manually `work-vp-test/variants.yaml` and `work-vp-test/var_dates.yaml` and re-run V-pipe if coocurrences have revealed early presence of another variant.
 
+- `/pangolin/work-vp-test/variant_config.yaml` -  general informations (variants, locations) used for deconvolution
+  - _locations_list_ (fomerly _cities_list_): full names of the locations for which to generate curves (see right column of `ww_locations.tsv`).
+  - _variants_list_ - full list of [PANGO lineages](https://cov-lineages.org/) plotted (as specified in the "_pangolin:_" field of the `voc/`_*_`.yaml` descriptions).
+  - _variants_pangolin_ - dictionary mapping short names to the official pango lineages (see: "_pangolin:_" and "_short:_" fields in the `voc/`_*_`.yaml` description)
+  - _variants_not_reported_ lists variants which will be not part of the regression and will be removed before the ressampling
+  - _start_date_:  first  date for the deconvolution
+  - _to_drop_: category of mutation to skip from tallymut (e.g.: subset),
+- `/pangolin/work-vp-test/var_dates.yaml` - which variants LolliPop needs to deconvolute for over which period of time.
+  - at each starting date, list the combination of variants that will be deconvoluted for the next period of time, as determined by cojac in the section above.
+
 Configuration file `regex.yaml` defines regular expressions that help parse the samples names as per section [Processing raw-reads with V-pipe](#Processing_raw-reads_with_V-pipe) above.
 
 - `sample` (and optionnally `batch`) define regular expressions that are run against the first (and optionnally second) column of V-pipe's `samples.tsv`. They define the following named-groups
@@ -289,6 +299,8 @@ Configuration file `regex.yaml` defines regular expressions that help parse the 
      In that case, write a regular expression that provides a named-group `date`, and then use, e.g., `%W` or `%-d` in your ` datefmt`.
 
 A look-up table `ww_locations.tsv` maps the location code (see `location` regex named group in the previous file) to their full description.
+
+
 
 ## Analysing wastewater with V-pipe
 
@@ -364,15 +376,11 @@ Notebook `WsSmoothing_legacy.ipynb` is temporarily used to do a bootstrap-based 
 
 ### Configuration
 
-It is possible to specify the path to search for the input files in the cell in the section titled "Globals".
+Configuration of the notebook relies on the same files `work-vp-test/variants.yaml` and `work-vp-test/var_dates.yaml` as used by V-pipe.
 
-- _cities_list_ - list of the city names to be plotted (as specified in table `ww_plants.tsv` during the [previous step](#building-the-variant-mutation-table)).
-- _variants_list_ - list of [PANGO lineages](https://cov-lineages.org/) plotted (as specified in the "_pangolin:_" field of the `voc/`_*_`.yaml` descriptions).
-- _variants_pangolin_ - dictionary mapping short names to the official pango lineages (see: "_pangolin:_" and "_short:_" fields in the `voc/`_*_`.yaml` description)
-- _variants_not_reported_ lists variants which will be not part of the regression and will be removed before the ressampling
-- _start_date_:  first  date for the deconvolution
-- _to_drop_: category of mutation to skip from tallymut (e.g.: subset),
-- _locations_list_ (fomerly _cities_list_): full names of the locations for which to generate curves (see right column of `ww_locations.tsv`).
+(This configuration was formerly specified in the cell in the section titled "Globals").
+
+Input files path can also be specified in Globals.
 
 ### Execution
 
