@@ -4,7 +4,7 @@ Version:	0.9.2
 ---
 # Wastewater reporting bioinformatics procedure
 
-This repository os our _**Standard of Procedure**_, its purpose is to **document the current procedure** used to process wastewater.
+This repository documents our _**Standard of Procedure**_ for processing wastewater data.
 
 Although it can transitionally contain segments of code, these are merely notebooks showing temporary procedures in place or results visualization (e.g.: uploading JSON formatted data to Cov-Spectrum).
 Any computation (e.g.: variants deconvolution) are usually integrated into the software component we rely upon.
@@ -12,7 +12,7 @@ Any computation (e.g.: variants deconvolution) are usually integrated into the s
 The current software includes:
 
  - [V-pipe](https://github.com/cbg-ethz/V-pipe): Our main Virus NGS Analysis workflow.
- - [cojac](https://github.com/cbg-ethz/cojac): Integrated into V-pipe, component tool for early detection based on combination of mutations
+ - [COJAC](https://github.com/cbg-ethz/cojac): Integrated into V-pipe, component tool for early detection based on combination of mutations
  - [LolliPop](https://github.com/cbg-ethz/LolliPop): Integrated into V-pipe, component tool for kernel-based deconvolution of variants
 
 
@@ -28,7 +28,7 @@ There is no tutorial, yet. In the mean time, a [draft _HOWTO_](https://gist.gith
 
 # Introduction
 
-This readme file describes the procedure which is used since 2023-04-08 to prepare the wastewater-based SARS-CoV-2 prevalence display on [CoV-Spectrum](https://cov-spectrum.ethz.ch/story/wastewater-in-switzerland) and provide the data to  [BAG/FOPH](https://www.covid19.admin.ch/en/epidemiologic/waste-water). The main references are [doi:10.1038/s41564-022-01185-x](https://doi.org/10.1038/s41564-022-01185-x) (preprint: [doi:10.1101/2021.01.08.21249379](https://www.medrxiv.org/content/10.1101/2021.01.08.21249379)), and  [doi:10.1101/2022.11.02.22281825](https://doi.org/10.1101/2022.11.02.22281825).
+This readme file describes the procedure that is used since 2023-04-08 to prepare the wastewater-based SARS-CoV-2 prevalence display on [CoV-Spectrum](https://cov-spectrum.ethz.ch/story/wastewater-in-switzerland) and provide the data to  [BAG/FOPH](https://www.covid19.admin.ch/en/epidemiologic/waste-water). The main references are [doi:10.1038/s41564-022-01185-x](https://doi.org/10.1038/s41564-022-01185-x) (preprint: [doi:10.1101/2021.01.08.21249379](https://www.medrxiv.org/content/10.1101/2021.01.08.21249379)), and  [doi:10.1101/2022.11.02.22281825](https://doi.org/10.1101/2022.11.02.22281825).
 
 It relies on V-pipe for most of the processing. The key steps are:
 
@@ -48,9 +48,9 @@ A separate procedure documents the steps to [add a new variant](#add-a-new-varia
 
 # Base processing
 
-Sample data is processed using the same pipeline configuration as currently used to process NGS data for the [Swiss SARS-CoV-2 Sequencing Consortium (S3C)](https://bsse.ethz.ch/cevo/research/sars-cov-2/swiss-sars-cov-2-sequencing-consortium.html).
+Sample data is processed using the same pipeline configuration as was used to process NGS data for the [Swiss SARS-CoV-2 Sequencing Consortium (S3C)](https://bsse.ethz.ch/cevo/research/sars-cov-2/swiss-sars-cov-2-sequencing-consortium.html).
 
-> **Note** as the S3C project is being sunsetted, and as the wastewater workflow matures, both sub-parts will be eventually merge into a single process, as documented in the HOWTO.
+> **Note** this differs from the procedure documented in the HOWTO, as we still do a split process: first base-processing in one working directory with one branch (rubicon), then wastewater processing in a different working directory with a different branch (ninjaturtles).
 
 *[NGS]: Next Generation Sequencing
 *[S3C]: Swiss SARS-CoV-2 Sequencing Consortium
@@ -75,7 +75,7 @@ The V-pipe version provided by pangolin is set up following the same layout as p
 
 *[SNV]: Single Nucleotide Variant
 
-This V-pipe setup will store snakemake environments in `pangolin/snake-envs`. It is possible to pre-download them in advance by running `cd pangolin/V-pipe; ./vpipe --jobs 16 --conda-create-envs-only` (see [tutorial](https://cbg-ethz.github.io/V-pipe/tutorial/sars-cov2/#running-v-pipe-on-the-cluster)). On our cluster, this is performed by the command `pangolin/working/create_envs` which also takes care of HTTP proxy.
+This V-pipe setup will store snakemake environments in `pangolin/snake-envs`. It is possible to pre-download them in advance by running `cd pangolin/V-pipe; ./vpipe --jobs 16 --conda-create-envs-only` (see [tutorial](https://cbg-ethz.github.io/V-pipe/tutorial/sars-cov2/#running-v-pipe-on-the-cluster)). Our installation on ETHZ's Euler cluster performs this download with the script `pangolin/working/create_envs` which also takes care of HTTP proxy.
 
 ## Processing raw-reads with V-pipe
 
@@ -93,7 +93,7 @@ V-pipe expects its input in subdirectories of `pangolin/working/samples` followi
 
 In the current procedure, this is provided autonomously by the setup used for S3C, and is similar to the output generated by scripts provided in `pangolin/sort_samples_dumb` and `pangolin/sort_samples_demultiplexstats`.
 
-The present procedure relies on the wastewater from Eawag samples following this naming schema, specifically providing a two-digit wastewater treatment plant (WWTP), and a sampling date:
+The present procedure relies on the wastewater from Eawag samples following this naming schema, specifically providing a numerical ID for wastewater treatment plant (WWTP), and a sampling date:
 
 *[WWTP]: Wastewater Treatment Plant
 
@@ -151,7 +151,7 @@ This will run the initial steps of V-pipe but stop before calling SNV and local 
 
 # Coocurrence analysis
 
-> **Note** cojac _**is now**_ part of V-pipe.
+> **Note** COJAC _**is now**_ part of V-pipe.
 
 ## Installation
 
@@ -167,7 +167,7 @@ The following document assumes user have already performed the base analysis wit
 
 ### Inputs
 
-(The script will help you generate those)
+(The script `cowabunga.sh` will help you generate those)
 
 - `/pangolin/work-vp-test/samples.wastewateronly.tsv` -- TSV table of the samples (the subset samples.tsv with wastewater samples)
 - `/pangolin/work-vp-test/reference/voc/`_*_`.yaml` -- definition of the variants
@@ -189,7 +189,8 @@ Because the above is still in an experimental state, we run in a separate workin
 In the directory `pangolin`, there is a tool called `cowabunga.sh` (that can assist in preparing data for running V-pipe).
 
 - run `./cowabunga.sh autoaddwastewater`
-  - this adds the wastewater samples at top of file `/pangolin/work-vp-test/samples.wastewateronly.tsv`, based on the project ID used by FGCZ.
+  - this adds the wastewater samples at top of file `/pangolin/work-vp-test/samples.wastewateronly.tsv`.
+    The wastewater samples are recognized based on the project ID that the sequencing labb -- the Functional Genomic Center Zürich (FGCZ) -- assigns them to.
 - run `./cowabunga.sh bring_results`
   - this creates the necessary hard-links inside `/pangolin/work-vp-test/results` so that V-pipe can reuse the alignments previously done as part of the [base processing](#base-processing).
 - submit V-pipe to the cluster with SLURM:
@@ -216,10 +217,12 @@ In the directory `pangolin`, there is a tool called `cowabunga.sh` (that can ass
     - `allCooc` -- runs COJAC on all samples.
     - `variants/cohort_cooc_report.v41.csv` -- assembles all COJAC results from all samples processed with Artic v4.1 into a table as featured in the additonnal materials of articles.
 
+*[FGCZ]: Functional Genomic Center Zürich
+
 ### Output
 
-- `/pangolin/work-vp-test/variants/amplicons.v`_*_`.yaml` -- amplicon description (generated from cojac's definitions)
-- `/pangolin/work-vp-test/results/`_*_`/`_*_`/signatures/cooc.yaml` -- internal cojac format with coocurrences
+- `/pangolin/work-vp-test/variants/amplicons.v`_*_`.yaml` -- amplicon description (generated from COJAC's definitions)
+- `/pangolin/work-vp-test/results/`_*_`/`_*_`/signatures/cooc.yaml` -- internal COJAC format with coocurrences
 - `/pangolin/work-vp-test/variants/cohort_cooc.`_*_`.yaml` and `.csv` -- COJAC results of all samples, aggregated by protocol.
 - `/pangolin/work-vp-test/variants/cohort_cooc_report.`_*_`.csv` -- COJAC results, in a publication-like table
 
@@ -243,7 +246,7 @@ cojac cooc-colourmut --amplicons amplicons.v41.yaml --yaml cooc.v41.yaml | less 
 
 ### Output
 
-Manually edit and adapt `work-vp-test/var_dates.yaml` (the list of all variant will be correctly auto-guess, no need to use one in  `work-vp-test/variants_config.yaml` )  to require deconvolution to include these newly detected variants (see next section "[Wastewater analysis](#wastewater-analysis)").
+Manually edit and adapt `work-vp-test/var_dates.yaml` (the list of all variant will be correctly auto-guessed, no need to use one in  `work-vp-test/variants_config.yaml` )  to require deconvolution to include these newly detected variants (see next section "[Wastewater analysis](#wastewater-analysis)").
 
 
 
@@ -274,7 +277,7 @@ You still need to update manually `work-vp-test/var_dates.yaml` and re-run V-pip
   - _to_drop_: category of mutation to skip from tallymut (e.g.: `subset`),
   - (_variants_not_reported_ and _variants_list_ aren't provided manually anymore as LolliPop can autoguess them correctly)
 - `/pangolin/work-vp-test/var_dates.yaml` -- which variants LolliPop needs to deconvolute for over which period of time.
-  - at each starting date, list the combination of variants that will be deconvoluted for the next period of time, as determined by cojac in the section above.
+  - at each starting date, list the combination of variants that will be deconvoluted for the next period of time, as determined by COJAC in the section above.
 
 Configuration file `regex.yaml` defines regular expressions that help parse the samples names as per section [Processing raw-reads with V-pipe](#processing-raw-reads-with-v-pipe) above.
 
@@ -304,7 +307,7 @@ The following document assumes user have already performed the base analysis and
 
 ### Inputs
 
-(the script will have already generated most of it for you)
+(the script `cowabunga.sh` will have already generated most of it for you)
 
 - `/pangolin/work-vp-test/samples.wastewateronly.tsv` -- TSV table of the samples (the subset samples.tsv with wastewater samples)
 - `/pangolin/work-vp-test/reference/voc/`_*_`.yaml` -- definition of the variants
