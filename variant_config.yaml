@@ -33,6 +33,7 @@ variants_pangolin:
   "omxbb15": "XBB.1.5"
   "omxbb116": "XBB.1.16"
   "omxbb19": "XBB.1.9"
+  "omxbb23": "XBB.2.3"
 
 #variants_not_reported:
  # - "BA.2.75.2"
@@ -59,7 +60,7 @@ locations_list:
   - "Laupen (BE)"
   - "Genève (GE)"
   - "Basel (catchment area ARA Basel)"
-  - "Sion (VS)"
+  - "Sierre/Noes (VS)"
   - "Porrentruy (JU)"
   - "Lausanne (Vidy)"
 #  - "Lausanne (VD)"

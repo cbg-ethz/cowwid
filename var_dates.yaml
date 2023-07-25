@@ -44,6 +44,7 @@ var_dates:
   - BQ.1.1
   - XBB.1.5
   - XBB.1.9
+  - XBB.2.3
   '2023-02-01':
   - BA.4
   - BA.5
@@ -52,3 +53,4 @@ var_dates:
   - XBB.1.5
   - XBB.1.9
   - XBB.1.16
+  - XBB.2.3
