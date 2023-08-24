@@ -1,6 +1,6 @@
 ---
-Date:	2023-06-28
-Version:	0.9.3
+Date:	2023-08-24
+Version:	0.9.4
 ---
 # Wastewater reporting bioinformatics procedure
 
