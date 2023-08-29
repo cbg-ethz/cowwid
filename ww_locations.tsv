@@ -25,15 +25,15 @@ code	location
 23	Ergolz (BL)
 24	Ski-resort
 25	Laupen (BE)
-26      Schaffhausen (SH)
-32      Bern (BE)
-33      Porrentruy (JU)
-34      Neuchâtel (NE)
-35      Solothurn (SO)
-36      Schwyz (SZ)
-37      Sierre/Noes (VS)
+26	Schaffhausen (SH)
+32	Bern (BE)
+33	Porrentruy (JU)
+34	Neuchâtel (NE)
+35	Solothurn (SO)
+36	Schwyz (SZ)
+37	Sierre/Noes (VS)
 99	water negative
-Ba	Basel (catchment area ARA Basel)
+Ba	Basel (BS)
 KLZHCov	Kanton Zürich
 KLZHCov_Promega	Kanton Zürich/Promega
 558600	Lausanne (VD)
