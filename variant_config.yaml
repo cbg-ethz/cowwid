@@ -40,6 +40,7 @@ variants_pangolin:
   "omba2871": "BA.2.87.1"
   "omkp.2": "KP.2"
   "omkp.3": "KP.3"
+  "xec": "XEC"
 
 #variants_not_reported:
  # - "BA.2.75.2"
