@@ -36,7 +36,7 @@ variants_pangolin:
   "omxbb19": "XBB.1.9"
   "omxbb23": "XBB.2.3"
   "omeg15": "EG.5"
-  "jn1": "JN.1"
+  "jn.1": "JN.1"
   "omba2871": "BA.2.87.1"
   "kp.2": "KP.2"
   "kp.3": "KP.3"
