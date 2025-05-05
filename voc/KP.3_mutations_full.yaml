@@ -3,7 +3,7 @@ variant:
   pangolin: 'KP.3'
   nextstrain: ''
 mut:
-21: 'C>T'
+  21: 'C>T'
   44: 'C>T'
   241: 'C>T'
   670: 'T>G'
