@@ -42,6 +42,8 @@ variants_pangolin:
   "kp.3": "KP.3"
   "xec": "XEC"
   "lp.8": "LP.8"
+  "nb.1.8.1": "NB.1.8.1"
+  "xfg": "XFG"
 
 #variants_not_reported:
  # - "BA.2.75.2"
