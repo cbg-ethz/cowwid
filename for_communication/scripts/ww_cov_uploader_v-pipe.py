@@ -84,7 +84,7 @@ dbconn.close()
 
 ################################  Upload to WiseDB ################################
 
-input_file = config["update_data_combined_file"]
+input_file = config["update_data_combined_file"] #change this to the output form the merge_json.py script!!!
 output_file = config["WiseDB_output_file"]
 checksum_file = config["WiseDB_checksum_file"]
 token_file_path = config["WiseDB_token_file_path"]
@@ -131,14 +131,32 @@ if result.stderr:
 
 polybox_url = config["FOPH_BAG_polybox_url"]
 
-%%bash -s "$polybox_url" "$update_data_combined_file" "$reformatted"
-ls -l "$2"
-curl --netrc --upload-file "$2" "$1" 
-curl --netrc --upload-file "$3" "$1"
+subprocess.run([
+    "curl", "--netrc", "--upload-file", update_data_combined_file, polybox_url
+])
+subprocess.run([
+    "curl", "--netrc", "--upload-file", reformatted, polybox_url
+])
+
+
+#%%bash -s "$polybox_url" "$update_data_combined_file" "$reformatted"
+#ls -l "$2"
+#curl --netrc --upload-file "$2" "$1" 
+#curl --netrc --upload-file "$3" "$1"
 
 ################################ Upload to Public Polybox folder ################################
 polybox_url = config["Public_polybox_url"]
-%%bash -s "$polybox_url" "$update_data_combined_file" "ww_update_data_combined.json"
-ls -l "$2"
-curl --netrc --upload-file "$2" "$1" 
-curl --netrc --upload-file "$3" "$1"
+
+subprocess.run([
+    "curl", "--netrc", "--upload-file", update_data_combined_file, polybox_url
+])
+
+#update_data_combined_file==ww_update_data_combined.json ; update_data_combined_file==input_file --> same file
+#subprocess.run([
+#    "curl", "--netrc", "--upload-file", input_file, polybox_url
+#])
+
+#%%bash -s "$polybox_url" "$update_data_combined_file" "ww_update_data_combined.json"
+#ls -l "$2"
+#curl --netrc --upload-file "$2" "$1" 
+#curl --netrc --upload-file "$3" "$1"

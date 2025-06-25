@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import zstandard
 import geopandas as gpd
 import seaborn as sns
 import yaml
