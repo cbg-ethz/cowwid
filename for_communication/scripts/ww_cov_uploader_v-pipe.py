@@ -84,8 +84,8 @@ dbconn.close()
 
 ################################  Upload to WiseDB ################################
 
-input_file = config["update_data_combined_file"] #change this to the output form the merge_json.py script!!!
-output_file = config["WiseDB_output_file"]
+input_file = config["output_for_wiseDB"] 
+output_file = config["WiseDB_output_file_gz"]
 checksum_file = config["WiseDB_checksum_file"]
 token_file_path = config["WiseDB_token_file_path"]
 url = config["WiseDB_url"]
