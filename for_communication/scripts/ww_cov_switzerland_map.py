@@ -3,6 +3,7 @@ import pandas as pd
 import geopandas as gpd
 import seaborn as sns
 import yaml
+import os
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -296,12 +297,16 @@ ax.axis("off")
 
 # save plot
 fig.tight_layout()
+
+# Suppose `most_recent` is a pandas.Timestamp or datetime.datetime
+safe_stamp = most_recent.strftime('%Y-%m-%d_%H%M%S')
+
 #fig.savefig("FOPH_figures/SwissMap_{}.pdf".format(file_out_name))
 #fig.savefig("plots/SwissMap_{}.png".format(file_out_name))
 #fig.savefig("plots/SwissMap_{}.svg".format(file_out_name))
 
 # Save figures with correct path
-fig.savefig(os.path.join(plots_dir, f"SwissMap_{file_out_name}.png"))
-fig.savefig(os.path.join(plots_dir, f"SwissMap_{file_out_name}.svg"))
+fig.savefig(os.path.join(plots_dir, f"SwissMap_{safe_stamp}.png"))
+fig.savefig(os.path.join(plots_dir, f"SwissMap_{safe_stamp}.svg"))
 
-fig.savefig(os.path.join(plots_dir, f"SwissMap_{file_out_name}.pdf"))
+fig.savefig(os.path.join(plots_dir, f"SwissMap_{safe_stamp}.pdf"))
