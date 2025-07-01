@@ -40,7 +40,7 @@ if upload_covspectrum == True:
         "gs-db-1.int.genspectrum.org" #"s0.int.genspectrum.org" # "db-lapis.cuupxsogkmvx.eu-central-1.rds.amazonaws.com"  #'id-hdb-psgr-cp61.ethz.ch'
     )
     # load from netrc
-    dbuser, dbpass = netrc.netrc().authenticators(dbhost)[0::2]
+    dbuser, dbpass = netrc.netrc().authenticators(dbhost)[0::2] # here is need a netrc file: it should be in the home folder of the user - add the login for covspetrum as an other element in the .netrc on pangolin euler home folder
 
     dbconn = psycopg2.connect(
         host=dbhost,
@@ -86,8 +86,7 @@ if upload_covspectrum == True:
 
     cur.close()
     dbconn.close()
-else:
-    continue
+
 
 ################################  Upload to WiseDB ################################
 if upload_wisedb == True :
@@ -114,9 +113,15 @@ if upload_wisedb == True :
     with open(checksum_file, 'w') as f:
         f.write(checksum + '\n')
         
-    # Setting up credentials
-    with open(token_file_path, 'r') as token_file:
-        token = token_file.read().strip()
+    ## Setting up credentials
+    #with open(token_file_path, 'r') as token_file:  # store the respective login also in the netrc and get it in a similar way as above to avoid accidentallly pushing it to git!
+    #    token = token_file.read().strip()
+    
+    dbhost = (
+        "wisedb"
+    )
+    # load from netrc
+    dbuser, token = netrc.netrc().authenticators(dbhost)[0::2] # here is need a netrc file: it should be in the home folder of the user - add the login for covspetrum as an other element in the .netrc on pangolin euler home folder
 
     # upload
     curl_command = [
@@ -159,6 +164,7 @@ if upload_polybox == True:
     subprocess.run([
         "curl", "--netrc", "--upload-file", update_data_combined_file, polybox_url
     ])
+
 
     #update_data_combined_file==ww_update_data_combined.json ; update_data_combined_file==input_file --> same file
     #subprocess.run([
