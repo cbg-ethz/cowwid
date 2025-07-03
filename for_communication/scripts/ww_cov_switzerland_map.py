@@ -1,3 +1,19 @@
+"""
+Script Name: ww_cov_switzerland_map.py
+
+Original Authors:
+    - Ivan Topolsky (@DrYak)
+    - David Dreifuss (@dr-david)
+    - Matteo Carrara (@mcarrara-bioinfo)
+
+Description:
+    This script generates a Swiss map visualizing SARS-CoV-2 variant proportions across 
+    selected wastewater treatment plant catchment areas.
+
+Maintainer:
+    - Kyra Kirschenbuehler (@kirschen-k)
+"""
+
 import numpy as np
 import pandas as pd
 import geopandas as gpd

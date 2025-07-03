@@ -1,3 +1,19 @@
+"""
+Script Name: ww_cov_curves_v-pipe.py
+
+Original Authors:
+    - Ivan Topolsky (@DrYak)
+    - David Dreifuss (@dr-david)
+    - Matteo Carrara (@mcarrara-bioinfo)
+
+Description:
+    This script processes and visualizes smoothed time-series data on SARS-CoV-2 variant proportions across 
+    Swiss locations.
+
+Maintainer:
+    - Kyra Kirschenbuehler (@kirschen-k)
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns

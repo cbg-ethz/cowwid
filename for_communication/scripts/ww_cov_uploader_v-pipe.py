@@ -1,3 +1,19 @@
+"""
+Script Name: ww_cov_uploader_v-pipe.py
+
+Original Authors:
+    - Ivan Topolsky (@DrYak)
+    - David Dreifuss (@dr-david)
+    - Matteo Carrara (@mcarrara-bioinfo)
+
+Description:
+    Uploads processed SARS-CoV-2 wastewater variant time series to CovSpectrum, WiseDB,
+    and FOPH/BAG Polybox. Handles DB connections, file checksums, and secure transfers.
+
+Maintainer:
+    - Kyra Kirschenbuehler (@kirschen-k)
+"""
+
 import gzip
 import shutil
 import hashlib
