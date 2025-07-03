@@ -53,7 +53,11 @@ if upload_covspectrum == True:
 
     with open(update_data_covspectrum_file, "r") as f:
         update_data_for_cov_spectrum = json.load(f)
-
+    
+    locations = sorted(list(update_data_for_cov_spectrum.keys()))
+    variants = sorted(
+        list({v for loc_data in update_data_for_cov_spectrum.values() for v in loc_data.keys()})
+    )
 
     for loc in tqdm(locations, desc="Locations", position=0):
         for pango in tqdm(variants, desc=loc, position=1, leave=True):
@@ -77,10 +81,6 @@ if upload_covspectrum == True:
                 },
             )
 
-
-    ## Abort DB update !
-    #dbconn.rollback()
-
     ## Save to DB !
     dbconn.commit()
 
@@ -94,7 +94,6 @@ if upload_wisedb == True :
     input_file = config["output_for_wiseDB"] 
     output_file = config["WiseDB_output_file_gz"]
     checksum_file = config["WiseDB_checksum_file"]
-    token_file_path = config["WiseDB_token_file_path"]
     url = config["WiseDB_url"]
 
     # gz compress the curves json file. --best is required for it to be compliant with 
@@ -112,16 +111,12 @@ if upload_wisedb == True :
     checksum = compute_sha256(output_file)
     with open(checksum_file, 'w') as f:
         f.write(checksum + '\n')
-        
-    ## Setting up credentials
-    #with open(token_file_path, 'r') as token_file:  # store the respective login also in the netrc and get it in a similar way as above to avoid accidentallly pushing it to git!
-    #    token = token_file.read().strip()
-    
+
     dbhost = (
         "wisedb"
     )
     # load from netrc
-    dbuser, token = netrc.netrc().authenticators(dbhost)[0::2] # here is need a netrc file: it should be in the home folder of the user - add the login for covspetrum as an other element in the .netrc on pangolin euler home folder
+    dbuser, token = netrc.netrc().authenticators(dbhost)[0::2] # add the login for covspetrum as an element in the .netrc
 
     # upload
     curl_command = [
@@ -152,26 +147,9 @@ if upload_polybox == True:
         "curl", "--netrc", "--upload-file", reformatted, polybox_url
     ])
 
-
-    #%%bash -s "$polybox_url" "$update_data_combined_file" "$reformatted"
-    #ls -l "$2"
-    #curl --netrc --upload-file "$2" "$1" 
-    #curl --netrc --upload-file "$3" "$1"
-
     ################################ Upload to Public Polybox folder ################################
     polybox_url = config["Public_polybox_url"]
 
     subprocess.run([
         "curl", "--netrc", "--upload-file", update_data_combined_file, polybox_url
     ])
-
-
-    #update_data_combined_file==ww_update_data_combined.json ; update_data_combined_file==input_file --> same file
-    #subprocess.run([
-    #    "curl", "--netrc", "--upload-file", input_file, polybox_url
-    #])
-
-    #%%bash -s "$polybox_url" "$update_data_combined_file" "ww_update_data_combined.json"
-    #ls -l "$2"
-    #curl --netrc --upload-file "$2" "$1" 
-    #curl --netrc --upload-file "$3" "$1"
