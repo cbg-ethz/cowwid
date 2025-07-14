@@ -226,7 +226,6 @@ jobs:
                 body += "## Resources\n\n"
                 body += "- 🔬 [Nextstrain SARS-CoV-2 Build](https://nextstrain.org/ncov/global)\n"
                 body += "- 📖 [Clade Naming Documentation](https://docs.nextstrain.org/projects/ncov/en/latest/reference/naming_clades.html)\n"
-                body += "- 🧪 [Clade Assignment Tool](https://clades.nextstrain.org/)\n"
                 body += "- 📂 [Source File](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)\n"
                 body += "- 🔍 [Detailed Clade Definitions](https://github.com/nextstrain/ncov/blob/master/defaults/clades.tsv)\n"
                 body += "- 📄 [Display Names](https://github.com/nextstrain/ncov/blob/master/defaults/clade_display_names.yml)\n"
