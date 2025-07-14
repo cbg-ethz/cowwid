@@ -12,7 +12,7 @@ on:
         type: boolean
   push:
     branches:
-      - main
+      - feat/nextclade_monitor
 jobs:
   check-clades:
     runs-on: ubuntu-latest
