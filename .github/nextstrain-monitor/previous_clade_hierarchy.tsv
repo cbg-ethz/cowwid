@@ -37,4 +37,16 @@ clade	parent	WHO
 23F	23D	Omicron
 23G	23A	Omicron
 23H	23F	Omicron
-
+23I	21L	Omicron
+24A	23I	Omicron
+24B	24A	Omicron
+24C	24B	Omicron
+24D	21L	Omicron
+24E	24C	Omicron
+24F	24A	Omicron
+24G	24B	Omicron
+24H	24A	Omicron
+24I	24A	Omicron
+25A	24B	Omicron
+25B	24D	Omicron
+25C	24A	Omicron
