@@ -25,6 +25,10 @@ jobs:
       - name: Download current clade_hierarchy.tsv from Nextstrain ncov repository
         run: |
           curl -s -o current_clade_hierarchy.tsv "https://raw.githubusercontent.com/nextstrain/ncov/master/defaults/clade_hierarchy.tsv"
+      - name: Download clade display names and emergence dates
+        run: |
+          curl -s -o clade_display_names.yml "https://raw.githubusercontent.com/nextstrain/ncov/master/defaults/clade_display_names.yml"
+          curl -s -o clade_emergence_dates.tsv "https://raw.githubusercontent.com/nextstrain/ncov/master/defaults/clade_emergence_dates.tsv"
       - name: Create tracking directory if it doesn't exist
         run: |
           mkdir -p .github/nextstrain-monitor
@@ -38,10 +42,13 @@ jobs:
             import requests
             from datetime import datetime
             import sys
+            import yaml
 
             # Configuration
             STORED_FILE = '.github/nextstrain-monitor/previous_clade_hierarchy.tsv'
             CURRENT_FILE = 'current_clade_hierarchy.tsv'
+            DISPLAY_NAMES_FILE = 'clade_display_names.yml'
+            EMERGENCE_DATES_FILE = 'clade_emergence_dates.tsv'
             GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
             REPO = os.environ['GITHUB_REPOSITORY']
             FORCE_CHECK = os.environ.get('FORCE_CHECK', 'false').lower() == 'true'
@@ -70,6 +77,57 @@ jobs:
                 except Exception as e:
                     print(f"Error reading {filepath}: {e}")
                     return set()
+
+            def load_clade_display_names(filepath):
+                """Load clade display names from YAML file"""
+                try:
+                    with open(filepath, 'r') as f:
+                        return yaml.safe_load(f) or {}
+                except Exception as e:
+                    print(f"Warning: Could not load display names from {filepath}: {e}")
+                    return {}
+
+            def load_clade_emergence_dates(filepath):
+                """Load clade emergence dates from TSV file"""
+                try:
+                    emergence_dates = {}
+                    with open(filepath, 'r') as f:
+                        # Skip header line
+                        next(f, None)
+                        for line in f:
+                            line = line.strip()
+                            if line and '\t' in line:
+                                parts = line.split('\t')
+                                if len(parts) >= 2:
+                                    clade = parts[0].strip()
+                                    date = parts[1].strip()
+                                    emergence_dates[clade] = date
+                    return emergence_dates
+                except Exception as e:
+                    print(f"Warning: Could not load emergence dates from {filepath}: {e}")
+                    return {}
+
+            def get_clade_info(clade, display_names, emergence_dates):
+                """Get enriched information for a clade"""
+                display_name = display_names.get(clade, clade)
+                emergence_date = emergence_dates.get(clade, "Unknown")
+                
+                # Format emergence date nicely
+                if emergence_date != "Unknown":
+                    try:
+                        date_obj = datetime.strptime(emergence_date, "%Y-%m-%d")
+                        formatted_date = date_obj.strftime("%B %Y")
+                    except:
+                        formatted_date = emergence_date
+                else:
+                    formatted_date = "Unknown"
+                
+                return {
+                    'clade': clade,
+                    'display_name': display_name,
+                    'emergence_date': emergence_date,
+                    'formatted_date': formatted_date
+                }
 
             def create_github_issue(title, body, labels=None):
                 """Create a GitHub issue"""
@@ -101,6 +159,12 @@ jobs:
             # Main logic
             print("🔍 Checking for new Nextstrain clade designations...")
 
+            # Load supplementary data
+            print("📥 Loading clade display names and emergence dates...")
+            display_names = load_clade_display_names(DISPLAY_NAMES_FILE)
+            emergence_dates = load_clade_emergence_dates(EMERGENCE_DATES_FILE)
+            print(f"📄 Loaded {len(display_names)} display names and {len(emergence_dates)} emergence dates")
+
             # Read current clades
             current_clades = read_clades_from_hierarchy(CURRENT_FILE)
             print(f"📊 Found {len(current_clades)} clades in current file")
@@ -121,8 +185,15 @@ jobs:
             if new_clades:
                 print(f"🆕 Detected {len(new_clades)} new clade(s): {', '.join(sorted(new_clades))}")
 
+                # Get enriched information for new clades
+                new_clade_info = []
+                for clade in sorted(new_clades):
+                    info = get_clade_info(clade, display_names, emergence_dates)
+                    new_clade_info.append(info)
+                    print(f"📋 {clade} -> {info['display_name']} (emerged: {info['formatted_date']})")
+
                 # Create issue for new clades
-                clade_list = sorted(new_clades)
+                clade_list = [info['display_name'] for info in new_clade_info]
                 if len(clade_list) == 1:
                     title = f"New Nextstrain Clade Designation Detected: {clade_list[0]}"
                 else:
@@ -132,49 +203,67 @@ jobs:
                 current_date = datetime.now().strftime("%B %d, %Y")
                 body = f"""# 🧬 New Nextstrain Clade Designation Alert
 
-            **Date Detected:** {current_date}
-            **Source:** [nextstrain/ncov](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)
+**Date Detected:** {current_date}
+**Source:** [nextstrain/ncov](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)
 
-            ## New Clade(s) Detected
+## New Clade(s) Detected
 
-            The following new clade designation(s) have been added to the Nextstrain ncov repository:
+The following new clade designation(s) have been added to the Nextstrain ncov repository:
 
-            """
+"""
 
-                for clade in sorted(new_clades):
-                    body += f"### 🔬 **{clade}**\n\n"
+                for info in new_clade_info:
+                    body += f"""### 🔬 **{info['display_name']}**
+
+| Property | Value |
+|----------|-------|
+| **Clade ID** | `{info['clade']}` |
+| **Display Name** | {info['display_name']} |
+| **Emergence Date** | {info['formatted_date']} ({info['emergence_date']}) |
+
+"""
 
                 body += f"""
-            ## Summary
+## Summary
 
-            - **New Clades:** {len(new_clades)}
-            - **Total Clades:** {len(current_clades)}
-            - **Previous Total:** {len(previous_clades)}
+- **New Clades:** {len(new_clades)}
+- **Total Clades:** {len(current_clades)}
+- **Previous Total:** {len(previous_clades)}
 
-            ## About Nextstrain Clades
+## About Nextstrain Clades
 
-            Nextstrain clades are designated when a variant:
-            - Reaches a frequency of 20% globally at any time point
-            - Is at least 2 mutations away from its parent major clade
-            - Shows significant geographic spread
+Nextstrain clades are designated when a variant:
+- Reaches a frequency of 20% globally at any time point
+- Is at least 2 mutations away from its parent major clade
+- Shows significant geographic spread
 
-            Clade names consist of the year they emerged and the next available letter in the alphabet (e.g., 19A, 20A, 21A, etc.).
+Clade names consist of the year they emerged and the next available letter in the alphabet (e.g., 19A, 20A, 21A, etc.).
 
-            ## Resources
+## Resources
 
-            - 🔬 [Nextstrain SARS-CoV-2 Build](https://nextstrain.org/ncov/global)
-            - 📖 [Clade Naming Documentation](https://docs.nextstrain.org/projects/ncov/en/latest/reference/naming_clades.html)
-            - 🧪 [Clade Assignment Tool](https://clades.nextstrain.org/)
-            - 📂 [Source File](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)
-            - 🔍 [Detailed Clade Definitions](https://github.com/nextstrain/ncov/blob/master/defaults/clades.tsv)
+- 🔬 [Nextstrain SARS-CoV-2 Build](https://nextstrain.org/ncov/global)
+- 📖 [Clade Naming Documentation](https://docs.nextstrain.org/projects/ncov/en/latest/reference/naming_clades.html)
+- 🧪 [Clade Assignment Tool](https://clades.nextstrain.org/)
+- 📂 [Source File](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)
+- 🔍 [Detailed Clade Definitions](https://github.com/nextstrain/ncov/blob/master/defaults/clades.tsv)
+- 📄 [Display Names](https://github.com/nextstrain/ncov/blob/master/defaults/clade_display_names.yml)
+- 📅 [Emergence Dates](https://github.com/nextstrain/ncov/blob/master/defaults/clade_emergence_dates.tsv)
 
-            ## All Current Clades
+## All Current Clades
 
-            {', '.join(sorted(current_clades))}
+"""
 
-            ---
-            *This issue was automatically created by the Nextstrain Clade Monitor action.*
-            """
+                # Create a table of all current clades with their info
+                body += "| Clade ID | Display Name | Emergence Date |\n"
+                body += "|----------|--------------|----------------|\n"
+                for clade in sorted(current_clades):
+                    info = get_clade_info(clade, display_names, emergence_dates)
+                    body += f"| `{info['clade']}` | {info['display_name']} | {info['formatted_date']} |\n"
+
+                body += """
+---
+*This issue was automatically created by the Nextstrain Clade Monitor action.*
+"""
 
                 # Create the issue
                 issue = create_github_issue(title, body)
@@ -185,26 +274,39 @@ jobs:
             elif FORCE_CHECK:
                 print("🔄 Force check enabled - creating informational issue")
                 title = f"Nextstrain Clade Monitor - Manual Check ({datetime.now().strftime('%Y-%m-%d')})"
+                
                 body = f"""# 🧬 Nextstrain Clade Monitor - Manual Check
 
-            **Date:** {datetime.now().strftime("%B %d, %Y at %H:%M UTC")}
+**Date:** {datetime.now().strftime("%B %d, %Y at %H:%M UTC")}
 
-            This is a manually triggered check of the Nextstrain clade designations.
+This is a manually triggered check of the Nextstrain clade designations.
 
-            ## Current Status
+## Current Status
 
-            - **Total Clades:** {len(current_clades)}
-            - **New Clades:** None detected
-            - **All Clades:** {', '.join(sorted(current_clades)) if current_clades else 'None'}
+- **Total Clades:** {len(current_clades)}
+- **New Clades:** None detected
 
-            ## Resources
+## All Current Clades
 
-            - 🔬 [Nextstrain SARS-CoV-2 Build](https://nextstrain.org/ncov/global)
-            - 📂 [Source File](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)
+| Clade ID | Display Name | Emergence Date |
+|----------|--------------|----------------|
+"""
+                
+                for clade in sorted(current_clades):
+                    info = get_clade_info(clade, display_names, emergence_dates)
+                    body += f"| `{info['clade']}` | {info['display_name']} | {info['formatted_date']} |\n"
 
-            ---
-            *This issue was manually triggered via the GitHub Actions workflow.*
-            """
+                body += """
+## Resources
+
+- 🔬 [Nextstrain SARS-CoV-2 Build](https://nextstrain.org/ncov/global)
+- 📂 [Source File](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)
+- 📄 [Display Names](https://github.com/nextstrain/ncov/blob/master/defaults/clade_display_names.yml)
+- 📅 [Emergence Dates](https://github.com/nextstrain/ncov/blob/master/defaults/clade_emergence_dates.tsv)
+
+---
+*This issue was manually triggered via the GitHub Actions workflow.*
+"""
                 create_github_issue(title, body, ['nextstrain', 'manual-check', 'automated'])
             else:
                 print("✅ No new clades detected")
@@ -219,14 +321,17 @@ jobs:
 
             # Output summary
             print(f"""
-            📊 Summary:
-            - Current clades: {len(current_clades)}
-            - Previous clades: {len(previous_clades)}
-            - New clades: {len(new_clades)}
-            """)
+📊 Summary:
+- Current clades: {len(current_clades)}
+- Previous clades: {len(previous_clades)}
+- New clades: {len(new_clades)}
+""")
 
             if new_clades:
-                print(f"🆕 New clades detected: {', '.join(sorted(new_clades))}")
+                print("🆕 New clades detected:")
+                for clade in sorted(new_clades):
+                    info = get_clade_info(clade, display_names, emergence_dates)
+                    print(f"  • {info['display_name']} (emerged: {info['formatted_date']})")
 
             EOF
       - name: Commit updated tracking file
@@ -244,4 +349,4 @@ jobs:
       - name: Cleanup temporary files
         if: always()
         run: |-
-          rm -f current_clade_hierarchy.tsv
+          rm -f current_clade_hierarchy.tsv clade_display_names.yml clade_emergence_dates.tsv
