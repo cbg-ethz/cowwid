@@ -129,10 +129,12 @@ jobs:
                     'formatted_date': formatted_date
                 }
 
-            def create_github_issue(title, body, labels=None):
+            def create_github_issue(title, body, labels=None, assignees=None):
                 """Create a GitHub issue"""
                 if labels is None:
                     labels = ['nextstrain', 'clade-designation', 'automated']
+                if assignees is None:
+                    assignees = ['gordonkoehn']
 
                 url = f"https://api.github.com/repos/{REPO}/issues"
                 headers = {
@@ -143,7 +145,8 @@ jobs:
                 data = {
                     'title': title,
                     'body': body,
-                    'labels': labels
+                    'labels': labels,
+                    'assignees': assignees
                 }
 
                 try:
@@ -202,18 +205,13 @@ jobs:
                 # Build detailed body
                 current_date = datetime.now().strftime("%B %d, %Y")
                 body = "# 🧬 New Nextstrain Clade Designation Alert\n\n"
+                body += "⚠️ **Action Required**: A new clade has been assigned by Nextstrain, consider adding it to the wastewater monitoring.\n\n"
                 body += f"**Date Detected:** {current_date}\n"
                 body += "**Source:** [nextstrain/ncov](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)\n\n"
                 body += "## New Clade(s) Detected\n\n"
-                body += "The following new clade designation(s) have been added to the Nextstrain ncov repository:\n\n"
 
                 for info in new_clade_info:
-                    body += f"### 🔬 **{info['display_name']}**\n\n"
-                    body += "| Property | Value |\n"
-                    body += "|----------|-------|\n"
-                    body += f"| **Clade ID** | `{info['clade']}` |\n"
-                    body += f"| **Display Name** | {info['display_name']} |\n"
-                    body += f"| **Emergence Date** | {info['formatted_date']} ({info['emergence_date']}) |\n\n"
+                    body += f"- **{info['display_name']}** (emerged: {info['formatted_date']})\n"
 
                 body += f"\n## Summary\n\n"
                 body += f"- **New Clades:** {len(new_clades)}\n"
@@ -233,16 +231,7 @@ jobs:
                 body += "- 🔍 [Detailed Clade Definitions](https://github.com/nextstrain/ncov/blob/master/defaults/clades.tsv)\n"
                 body += "- 📄 [Display Names](https://github.com/nextstrain/ncov/blob/master/defaults/clade_display_names.yml)\n"
                 body += "- 📅 [Emergence Dates](https://github.com/nextstrain/ncov/blob/master/defaults/clade_emergence_dates.tsv)\n\n"
-                body += "## All Current Clades\n\n"
-
-                # Create a table of all current clades with their info
-                body += "| Clade ID | Display Name | Emergence Date |\n"
-                body += "|----------|--------------|----------------|\n"
-                for clade in sorted(current_clades):
-                    info = get_clade_info(clade, display_names, emergence_dates)
-                    body += f"| `{info['clade']}` | {info['display_name']} | {info['formatted_date']} |\n"
-
-                body += "\n---\n"
+                body += "---\n"
                 body += "*This issue was automatically created by the Nextstrain Clade Monitor action.*\n"
 
                 # Create the issue
@@ -261,15 +250,7 @@ jobs:
                 body += "## Current Status\n\n"
                 body += f"- **Total Clades:** {len(current_clades)}\n"
                 body += "- **New Clades:** None detected\n\n"
-                body += "## All Current Clades\n\n"
-                body += "| Clade ID | Display Name | Emergence Date |\n"
-                body += "|----------|--------------|----------------|\n"
-                
-                for clade in sorted(current_clades):
-                    info = get_clade_info(clade, display_names, emergence_dates)
-                    body += f"| `{info['clade']}` | {info['display_name']} | {info['formatted_date']} |\n"
-
-                body += "\n## Resources\n\n"
+                body += "## Resources\n\n"
                 body += "- 🔬 [Nextstrain SARS-CoV-2 Build](https://nextstrain.org/ncov/global)\n"
                 body += "- 📂 [Source File](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)\n"
                 body += "- 📄 [Display Names](https://github.com/nextstrain/ncov/blob/master/defaults/clade_display_names.yml)\n"
