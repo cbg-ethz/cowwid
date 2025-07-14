@@ -116,7 +116,7 @@ jobs:
                 if emergence_date != "Unknown":
                     try:
                         date_obj = datetime.strptime(emergence_date, "%Y-%m-%d")
-                        formatted_date = date_obj.strftime("%B %Y")
+                        formatted_date = date_obj.strftime("%B %d, %Y")
                     except:
                         formatted_date = emergence_date
                 else:
