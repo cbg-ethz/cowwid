@@ -132,7 +132,7 @@ jobs:
             def create_github_issue(title, body, labels=None, assignees=None):
                 """Create a GitHub issue"""
                 if labels is None:
-                    labels = ['nextstrain', 'clade-designation', 'automated']
+                    labels = ['nextstrain', 'clade-designation', 'automated', 'variant-creation-needed']
                 if assignees is None:
                     assignees = ['gordonkoehn']
 
