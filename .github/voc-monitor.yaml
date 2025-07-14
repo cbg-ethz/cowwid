@@ -1,0 +1,247 @@
+name: Monitor Nextstrain Clade Designations
+on:
+  schedule:
+    # Run daily at 9:00 AM UTC (you can adjust this time)
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Allow manual triggering
+    inputs:
+      force_check:
+        description: 'Force check even if no changes detected'
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches:
+      - main
+jobs:
+  check-clades:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # To commit changes to the repository
+      issues: write # To create issues
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Download current clade_hierarchy.tsv from Nextstrain ncov repository
+        run: |
+          curl -s -o current_clade_hierarchy.tsv "https://raw.githubusercontent.com/nextstrain/ncov/master/defaults/clade_hierarchy.tsv"
+      - name: Create tracking directory if it doesn't exist
+        run: |
+          mkdir -p .github/nextstrain-monitor
+      - name: Check for clade changes and create issue if needed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_CHECK: ${{ github.event.inputs.force_check }}
+        run: |
+            python << 'EOF'
+            import os
+            import requests
+            from datetime import datetime
+            import sys
+
+            # Configuration
+            STORED_FILE = '.github/nextstrain-monitor/previous_clade_hierarchy.tsv'
+            CURRENT_FILE = 'current_clade_hierarchy.tsv'
+            GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
+            REPO = os.environ['GITHUB_REPOSITORY']
+            FORCE_CHECK = os.environ.get('FORCE_CHECK', 'false').lower() == 'true'
+
+            def read_clades_from_hierarchy(filepath):
+                """Read clade hierarchy file and return set of unique clades"""
+                try:
+                    clades = set()
+                    with open(filepath, 'r') as f:
+                        for line in f:
+                            line = line.strip()
+                            # Skip empty lines and comments
+                            if line and not line.startswith('#'):
+                                # Handle TSV format - take first column as clade name
+                                if '\t' in line:
+                                    clade = line.split('\t')[0].strip()
+                                else:
+                                    # If no tabs, assume whole line is clade name
+                                    clade = line.strip()
+
+                                if clade:
+                                    clades.add(clade)
+
+                    return clades
+
+                except Exception as e:
+                    print(f"Error reading {filepath}: {e}")
+                    return set()
+
+            def create_github_issue(title, body, labels=None):
+                """Create a GitHub issue"""
+                if labels is None:
+                    labels = ['nextstrain', 'clade-designation', 'automated']
+
+                url = f"https://api.github.com/repos/{REPO}/issues"
+                headers = {
+                    'Authorization': f'token {GITHUB_TOKEN}',
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+
+                data = {
+                    'title': title,
+                    'body': body,
+                    'labels': labels
+                }
+
+                try:
+                    response = requests.post(url, headers=headers, json=data)
+                    response.raise_for_status()
+                    issue_data = response.json()
+                    print(f"✅ Created issue #{issue_data['number']}: {title}")
+                    return issue_data
+                except Exception as e:
+                    print(f"❌ Error creating issue: {e}")
+                    return None
+
+            # Main logic
+            print("🔍 Checking for new Nextstrain clade designations...")
+
+            # Read current clades
+            current_clades = read_clades_from_hierarchy(CURRENT_FILE)
+            print(f"📊 Found {len(current_clades)} clades in current file")
+            if current_clades:
+                print(f"🔤 Current clades: {', '.join(sorted(current_clades))}")
+
+            # Read previous clades (if exists)
+            previous_clades = set()
+            if os.path.exists(STORED_FILE):
+                previous_clades = read_clades_from_hierarchy(STORED_FILE)
+                print(f"📋 Found {len(previous_clades)} clades in previous file")
+            else:
+                print("📄 No previous clades file found - this is the first run")
+
+            # Find new clades
+            new_clades = current_clades - previous_clades
+
+            if new_clades:
+                print(f"🆕 Detected {len(new_clades)} new clade(s): {', '.join(sorted(new_clades))}")
+
+                # Create issue for new clades
+                clade_list = sorted(new_clades)
+                if len(clade_list) == 1:
+                    title = f"New Nextstrain Clade Designation Detected: {clade_list[0]}"
+                else:
+                    title = f"New Nextstrain Clade Designations Detected: {', '.join(clade_list)}"
+
+                # Build detailed body
+                current_date = datetime.now().strftime("%B %d, %Y")
+                body = f"""# 🧬 New Nextstrain Clade Designation Alert
+
+            **Date Detected:** {current_date}
+            **Source:** [nextstrain/ncov](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)
+
+            ## New Clade(s) Detected
+
+            The following new clade designation(s) have been added to the Nextstrain ncov repository:
+
+            """
+
+                for clade in sorted(new_clades):
+                    body += f"### 🔬 **{clade}**\n\n"
+
+                body += f"""
+            ## Summary
+
+            - **New Clades:** {len(new_clades)}
+            - **Total Clades:** {len(current_clades)}
+            - **Previous Total:** {len(previous_clades)}
+
+            ## About Nextstrain Clades
+
+            Nextstrain clades are designated when a variant:
+            - Reaches a frequency of 20% globally at any time point
+            - Is at least 2 mutations away from its parent major clade
+            - Shows significant geographic spread
+
+            Clade names consist of the year they emerged and the next available letter in the alphabet (e.g., 19A, 20A, 21A, etc.).
+
+            ## Resources
+
+            - 🔬 [Nextstrain SARS-CoV-2 Build](https://nextstrain.org/ncov/global)
+            - 📖 [Clade Naming Documentation](https://docs.nextstrain.org/projects/ncov/en/latest/reference/naming_clades.html)
+            - 🧪 [Clade Assignment Tool](https://clades.nextstrain.org/)
+            - 📂 [Source File](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)
+            - 🔍 [Detailed Clade Definitions](https://github.com/nextstrain/ncov/blob/master/defaults/clades.tsv)
+
+            ## All Current Clades
+
+            {', '.join(sorted(current_clades))}
+
+            ---
+            *This issue was automatically created by the Nextstrain Clade Monitor action.*
+            """
+
+                # Create the issue
+                issue = create_github_issue(title, body)
+
+                if issue:
+                    print(f"📋 Issue created successfully: {issue['html_url']}")
+
+            elif FORCE_CHECK:
+                print("🔄 Force check enabled - creating informational issue")
+                title = f"Nextstrain Clade Monitor - Manual Check ({datetime.now().strftime('%Y-%m-%d')})"
+                body = f"""# 🧬 Nextstrain Clade Monitor - Manual Check
+
+            **Date:** {datetime.now().strftime("%B %d, %Y at %H:%M UTC")}
+
+            This is a manually triggered check of the Nextstrain clade designations.
+
+            ## Current Status
+
+            - **Total Clades:** {len(current_clades)}
+            - **New Clades:** None detected
+            - **All Clades:** {', '.join(sorted(current_clades)) if current_clades else 'None'}
+
+            ## Resources
+
+            - 🔬 [Nextstrain SARS-CoV-2 Build](https://nextstrain.org/ncov/global)
+            - 📂 [Source File](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)
+
+            ---
+            *This issue was manually triggered via the GitHub Actions workflow.*
+            """
+                create_github_issue(title, body, ['nextstrain', 'manual-check', 'automated'])
+            else:
+                print("✅ No new clades detected")
+
+            # Always update the stored file for next comparison
+            os.makedirs(os.path.dirname(STORED_FILE), exist_ok=True)
+            with open(STORED_FILE, 'w') as f:
+                with open(CURRENT_FILE, 'r') as current:
+                    f.write(current.read())
+
+            print("💾 Updated stored clades file for next comparison")
+
+            # Output summary
+            print(f"""
+            📊 Summary:
+            - Current clades: {len(current_clades)}
+            - Previous clades: {len(previous_clades)}
+            - New clades: {len(new_clades)}
+            """)
+
+            if new_clades:
+                print(f"🆕 New clades detected: {', '.join(sorted(new_clades))}")
+
+            EOF
+      - name: Commit updated tracking file
+        if: always()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .github/nextstrain-monitor/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update Nextstrain clade tracking data [skip ci]" || echo "Nothing to commit"
+            git push || echo "Nothing to push"
+          fi
+      - name: Cleanup temporary files
+        if: always()
+        run: |-
+          rm -f current_clade_hierarchy.tsv
