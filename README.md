@@ -138,7 +138,11 @@ This will run the initial steps of V-pipe but stop before calling SNV and local 
 
 ## Installation
 
-We run it in a separate working area (`work-vp-test/` instead of `working/`), the prototype branch is in the [`V-pipe-test`](pangolin/V-pipe-test) submodule of repo pangolin. Scripts ([`cowabunga.sh`](https://github.com/cbg-ethz/pangolin/blob/master/cowabunga.sh)) assist handling these directories.
+Processing uses the V-pipe.
+- branch: [ninjaturtles](https://github.com/cbg-ethz/V-pipe/tree/ninjaturtles), tip: [e8be5f1fad7a970e3299e142f329f037f3890fe4](https://github.com/cbg-ethz/V-pipe/commit/e8be5f1fad7a970e3299e142f329f037f3890fe4)
+  - this branch relies on COJAC 0.9 released on [bioconda](https://bioconda.github.io/recipes/cojac/README.html).
+
+Because the above is still in an experimental state, we run in a separate working area (`work-vp-test/` instead of `working/`), the prototype branch is in the [`V-pipe-test`](pangolin/V-pipe-test) submodule of repo pangolin. Scripts ([`cowabunga.sh`](https://github.com/cbg-ethz/pangolin/blob/master/cowabunga.sh)) assist handling these directories.
 
 ## Analyzing cooccurrence with V-pipe
 
