@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: master
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -150,8 +152,8 @@ jobs:
               nextstrain_clade = clade_info['nextstrain']
               display_name = clade_info['display_name']
               
-              # Create filename: lowercase display name
-              filename = f"{display_name.lower()}_mutations_full.yaml"
+              # Create filename: lowercase display name with _bot suffix
+              filename = f"{display_name.lower()}_mutations_full_bot.yaml"
               filepath = f"voc/{filename}"
               
               # Build variant structure
@@ -215,11 +217,11 @@ jobs:
                   'Accept': 'application/vnd.github.v3+json'
               }
               
-              title = f"Add variant definition for {clade_info['display_name']} ({clade_info['nextstrain']})"
-              body = f"# 🧬 Automated Variant Definition\n\n"
-              body += f"This PR adds the variant definition for **{clade_info['display_name']}** (Nextstrain clade {clade_info['nextstrain']}).\n\n"
+              title = f"Add automated variant definition for {clade_info['display_name']} ({clade_info['nextstrain']})"
+              body = f"# � Automated Variant Definition\n\n"
+              body += f"This PR adds the automated variant definition for **{clade_info['display_name']}** (Nextstrain clade {clade_info['nextstrain']}).\n\n"
               body += "## Generated Files\n"
-              body += f"- `voc/{filename}` - Nucleotide mutations from CovSpectrum\n\n"
+              body += f"- `voc/{filename}` - Nucleotide mutations from CovSpectrum (automated)\n\n"
               body += "## CovSpectrum Query Parameters\n"
               body += f"- **Variant Query**: `{clade_info['display_name']}*`\n"
               body += f"- **Min Proportion**: {MIN_PROPORTION}\n"
@@ -312,7 +314,7 @@ jobs:
                   os.system(f'git config --local user.name "GitHub Action"')
                   os.system(f'git checkout -b {branch_name}')
                   os.system(f'git add {filepath}')
-                  os.system(f'git commit -m "Add variant definition for {display_name} ({nextstrain_clade})"')
+                  os.system(f'git commit -m "Add automated variant definition for {display_name} ({nextstrain_clade})"')
                   os.system(f'git push origin {branch_name}')
                   
                   # Create PR
