@@ -25,6 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: master
+          fetch-depth: 0  # Fetch full history for proper branching
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -256,7 +257,7 @@ jobs:
               }
               
               title = f"Add automated variant definition for {clade_info['display_name']} ({clade_info['nextstrain']})"
-              body = f"# � Automated Variant Definition\n\n"
+              body = f"# 🧬 Automated Variant Definition\n\n"
               body += f"This PR adds the automated variant definition for **{clade_info['display_name']}** (Nextstrain clade {clade_info['nextstrain']}).\n\n"
               body += "## Generated Files\n"
               body += f"- `voc/{filename}` - Nucleotide mutations from CovSpectrum (automated)\n\n"
@@ -288,6 +289,12 @@ jobs:
 
           # Main execution
           print(f"🚀 Starting variant creation workflow...")
+          
+          # Ensure we start from a clean master branch
+          os.system('git fetch origin master')
+          os.system('git checkout master')
+          os.system('git reset --hard origin/master')
+          print("✅ Reset to clean master branch")
           
           # Get issues to process
           issue_numbers = get_issues_to_process()
@@ -363,13 +370,23 @@ jobs:
                       
                       print(f"✅ Created variant file: {filepath}")
                       
+                      # Ensure we're on a clean master branch from remote
+                      os.system('git fetch origin master')
+                      os.system('git checkout master')
+                      os.system('git reset --hard origin/master')
+                      
                       # Create branch and commit
                       os.system(f'git config --local user.email "action@github.com"')
                       os.system(f'git config --local user.name "GitHub Action"')
                       os.system(f'git checkout -b {branch_name}')
                       os.system(f'git add {filepath}')
                       os.system(f'git commit -m "Add automated variant definition for {display_name} ({nextstrain_clade})"')
-                      os.system(f'git push origin {branch_name}')
+                      
+                      # Force push to ensure clean branch (in case it exists from previous run)
+                      push_result = os.system(f'git push --force-with-lease origin {branch_name}')
+                      if push_result != 0:
+                          # If force-with-lease fails, try regular push
+                          os.system(f'git push origin {branch_name}')
                       
                       # Create PR
                       pr_data = create_pr(branch_name, clade_info, filename, issue_number)
@@ -380,15 +397,19 @@ jobs:
                       else:
                           comment_on_issue(f"❌ **{display_name}**: Created variant file but failed to create PR", issue_number)
                       
-                      # Switch back to master for next variant
+                      # Switch back to clean master for next variant
+                      os.system('git fetch origin master')
                       os.system('git checkout master')
+                      os.system('git reset --hard origin/master')
                       
                   except Exception as e:
                       error_msg = f"❌ **{clade_info.get('display_name', 'Unknown')}**: Unexpected error during processing: {str(e)}"
                       comment_on_issue(error_msg, issue_number)
                       print(f"❌ Error processing {clade_info}: {e}")
-                      # Switch back to master even on error
+                      # Switch back to clean master even on error
+                      os.system('git fetch origin master')
                       os.system('git checkout master')
+                      os.system('git reset --hard origin/master')
               
               # Final summary for this issue
               if success_count > 0:
