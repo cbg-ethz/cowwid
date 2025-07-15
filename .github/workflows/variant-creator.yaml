@@ -82,7 +82,14 @@ jobs:
               try:
                   response = requests.get(url, headers=headers)
                   response.raise_for_status()
-                  return response.json()
+                  issue_data = response.json()
+                  
+                  # Check if issue is still open
+                  if issue_data.get('state') != 'open':
+                      print(f"⚠️ Issue #{ISSUE_NUMBER} is {issue_data.get('state')}, skipping processing")
+                      return None
+                  
+                  return issue_data
               except Exception as e:
                   print(f"❌ Error getting issue details: {e}")
                   return None
@@ -251,11 +258,11 @@ jobs:
           # Main execution
           print(f"🚀 Starting variant creation for issue #{ISSUE_NUMBER}")
           
-          # Get issue details
+          # Get issue details (must be open to process)
           issue_data = get_issue_details()
           if not issue_data:
-              print("❌ Could not retrieve issue details")
-              exit(1)
+              print("❌ Could not retrieve issue details or issue is not open")
+              exit(0)  # Exit gracefully instead of error
           
           # Extract clades from issue
           clades = extract_clades_from_issue(issue_data)
