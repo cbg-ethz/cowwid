@@ -163,6 +163,8 @@ df = pd.DataFrame.from_records(
     ]
 )
 ################################ Plot ################################
+
+# TODO: depending on how many WWTPs we are tracking, we might need to increase nrows and ncols or it will break. A better approach would be to dynamically decide based on how many WWTPs we have
 plotwidth = 40
 
 fig, axes = plt.subplots(

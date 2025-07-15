@@ -171,6 +171,7 @@ df_pop.set_index("ARANAME", inplace=True)
 df_pop.head()
 
 ################################ Select relevant CAs
+# IMPROVE: This is a hardcoded list of tracked ARAs. As soon as this changes we will have to change the script. An improvement is to move this to the config
 selected_ca_list = [
     #'ARA REGION BERN AG',
     #'PORRENTRUY(SEPE)',

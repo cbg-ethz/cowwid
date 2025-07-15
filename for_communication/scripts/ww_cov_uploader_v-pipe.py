@@ -50,6 +50,7 @@ upload_wisedb=config["upload_wisedb"]
 upload_polybox=config["upload_polybox"]
 
 ################################  Upload to Cov-Spectrum ################################
+#IMPROVE: This is hardcoded and can be moved to the config as an improvement
 if upload_covspectrum == True:
 
     dbhost = (
@@ -58,6 +59,7 @@ if upload_covspectrum == True:
     # load from netrc
     dbuser, dbpass = netrc.netrc().authenticators(dbhost)[0::2] # here is need a netrc file: it should be in the home folder of the user - add the login for covspetrum as an other element in the .netrc on pangolin euler home folder
 
+    ##IMPROVE: This is hardcoded and can be moved to the config as an improvement
     dbconn = psycopg2.connect(
         host=dbhost,
         database="covspectrum",  #'sars_cov_2',

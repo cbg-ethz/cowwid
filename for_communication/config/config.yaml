@@ -17,6 +17,7 @@ update_data_covspectrum_file: "/cluster/project/pangolin/cowwid/for_communicatio
 
 # Source of inspiration from covariatns, see:
 # https://github.com/hodcroftlab/covariants/tree/master/web/public/data/clusters.json
+# Variants not following covariants due to not avail last time checked: "BA.2.75.2", "BA.2.87.1","KP.2"
 #
 # Keep in sync with covspectrum, see:
 # https://github.com/GenSpectrum/cov-spectrum-website/blob/develop/src/models/wasteWater/constants.ts
