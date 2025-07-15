@@ -1,0 +1,133 @@
+# Config 
+
+################################  Generate Curves  ################################
+# Input
+datadir: "/cluster/project/pangolin/work-vp-test/variants"
+jsonfile_smooth: "/cluster/project/pangolin/work-vp-test/variants/deconvoluted_upload.json"
+
+# Output
+plots_dir: "/cluster/project/pangolin/cowwid/for_communication/plots"
+outdir: "/cluster/project/pangolin/cowwid/for_communication/output"
+
+# backup the combined data
+update_data_file: "/cluster/project/pangolin/cowwid/for_communication/output/ww_update_data.json"
+update_data_combined_file: "/cluster/project/pangolin/cowwid/for_communication/output/ww_update_data_combined.json"
+reformatted: "/cluster/project/pangolin/cowwid/for_communication/output/ww_update_data_smooth_kernel_rob.json"
+update_data_covspectrum_file: "/cluster/project/pangolin/cowwid/for_communication/output/ww_update_data_covspectrum.json"
+
+# Source of inspiration from covariatns, see:
+# https://github.com/hodcroftlab/covariants/tree/master/web/public/data/clusters.json
+# Variants not following covariants due to not avail last time checked: "BA.2.75.2", "BA.2.87.1","KP.2"
+#
+# Keep in sync with covspectrum, see:
+# https://github.com/GenSpectrum/cov-spectrum-website/blob/develop/src/models/wasteWater/constants.ts
+color_map:
+  B.1.1.7: "#D16666"
+  B.1.351: "#FF6665"
+  P.1: "#FFB3B3"
+  B.1.617.1: "#66C265"
+  B.1.617.2: "#66A366"
+  BA.1: "#A366A3"
+  BA.2: "#cfafcf"
+  BA.4: "#8a66ff"
+  BA.5: "#585eff"
+  BA.2.12.1: "#0400e0"
+  BA.2.75: "#008fe0"
+  BA.2.75.2: "#208fe0"
+  BQ.1.1: "#ac00e0"
+  XBB.1.9: "#bb6a33"
+  XBB.1.5: "#ff5656"
+  XBB.1.16: "#e99b30"
+  XBB.2.3: "#f5e424"
+  EG.5: "#b4e80b"
+  BA.2.86: "#FF20E0"
+  JN.1: "#29a4ef"
+  BA.2.87.1: "#56acbc"
+  KP.2: "#876566"
+  KP.3: "#331eee"
+  XEC: "#77096b"
+  LP.8: "#11a90b"
+  NB.1.8.1: "#b3cb23"
+  XFG: "#bd8e23"
+  undetermined: "#969696"
+
+blacklist:
+  - location: "Zürich (ZH)"
+    date: "2024-02-19"
+    reason: "investigating bs.2.86 surge"
+  - location: "Zürich (ZH)"
+    date: "2024-02-21"
+    reason: "investigating bs.2.86 surge"
+  - location: "Zürich (ZH)"
+    date: "2024-02-24"
+    reason: "investigating bs.2.86 surge"
+
+### merge_json.py spcific
+historic_json: "/cluster/project/pangolin/cowwid/for_communication/resources/curves_untracked_wwtps.json"
+output_for_wiseDB: "/cluster/project/pangolin/cowwid/for_communication/output/ww_update_data_wisebd.json"
+
+
+################################  UPLOAD ################################
+#activate or deactivate uploads
+upload_covspectrum: True
+upload_wisedb: True
+upload_polybox: True
+
+################################  Upload to WiseDB ################################
+
+WiseDB_output_file_gz: '/cluster/project/pangolin/cowwid/for_communication/output/ww_update_data_wisebd.json.gz'
+WiseDB_checksum_file: '/cluster/project/pangolin/cowwid/for_communication/output/ww_update_data_wisebd.json.gz.sha256'
+WiseDB_url: "https://wisedb.ethz.ch/api/fileuploadbatch/sars_variants/"
+
+################################  Upload to Polybox ################################
+FOPH_BAG_polybox_url: "https://bs-pangolin@polybox.ethz.ch/remote.php/dav/files/bs-pangolin/Shared/BAG-COWWID19/"
+Public_polybox_url: "https://bs-pangolin@polybox.ethz.ch/remote.php/dav/files/bs-pangolin/Shared/public_wastewater_data_share/"
+
+
+################################  Switzerland map ################################
+
+deconvolution:  "/cluster/project/pangolin/work-vp-test/variants/deconvoluted.tsv.zst"
+
+switzerland_map: "/cluster/project/pangolin/cowwid/for_communication/resources/switzerland.geojson"
+kantons_map: "/cluster/project/pangolin/cowwid/for_communication/resources/swiss_kantons.geojson"
+swiss_cities: "/cluster/project/pangolin/cowwid/for_communication/resources/swiss_cities.csv"
+swiss_lakes: "/cluster/project/pangolin/cowwid/for_communication/resources/swiss_lakes.geojson"
+swiss_municipalities:  "/cluster/project/pangolin/cowwid/for_communication/resources/swiss_municipalities.geojson"
+wastewater_plants: "/cluster/project/pangolin/cowwid/for_communication/resources/wastewater_plants.csv"
+legend_information: "/cluster/project/pangolin/cowwid/for_communication/resources/legend_information.csv"
+ARA_2014_SWW: "/cluster/project/pangolin/cowwid/for_communication/resources/ARA_2014_SWW.shp"
+ARA_Einzugsgebiet_2014_SWW: "/cluster/project/pangolin/cowwid/for_communication/resources/ARA_Einzugsgebiet_2014_SWW.shp"
+Ang_Einwohner_ARA_am01012021: "/cluster/project/pangolin/cowwid/for_communication/resources/Ang_Einwohner_ARA_am01012021.xls"
+
+ara_shortnames:
+  Bern (BE): "ARA REGION BERN AG"
+  Porrentruy (JU): "PORRENTRUY(SEPE)"
+  Basel (BS): "BASEL"
+  Schwyz (SZ): "SCHWYZ"
+  Laupen (BE): "LAUPEN(SENSETAL)"
+  Lausanne (VD): "LAUSANNE"
+  Neuchâtel (NE): "NEUCHATEL"
+  Solothurn (SO): "ZUCHWIL(SOLOTH.-EMME)"
+  Luzern (LU): "EMMEN(BUHOLZ)"
+  Altenrhein (SG): "THAL/ALTENRHEIN"
+  Zürich (ZH): "ZUERICH(WERDHOELZLI)"
+  Chur (GR): "CHUR"
+  Lugano (TI): "BIOGGIO(LUGANO)"
+  Genève (GE): "VERNIER/AIRE"
+
+ara_shortnames_english:
+  Bern (BE): "Bern (BE)"
+  Porrentruy (JU): "Porrentruy (JU)"
+  Basel (BS): "Basel (BS)"
+  Schwyz (SZ): "Schwyz (SZ)"
+  Laupen (BE): "Laupen (BE)"
+  Lausanne (VD): "Lausanne (VD)"
+  Neuchâtel (NE): "Neuchatel (NE)"
+  Solothurn (SO): "Solothurn (SO)"
+  Luzern (LU): "Lucerne (LU)"
+  Altenrhein (SG): "Altenrhein (SG)"
+  Zürich (ZH): "Zurich (ZH)"
+  Chur (GR): "Chur (GR)"
+  Lugano (TI): "Lugano (TI)"
+  Genève (GE): "Geneva (GE)"
+

@@ -1,0 +1,34 @@
+# Ignore all plot outputs
+for_communication/plots/
+**/*.png
+**/*.svg
+**/*.pdf
+
+for_communication/output/
+
+for_communication/resources/
+
+for_communication/envs/
+
+# Temporary or backup files
+*.log
+*.tmp
+*.bak
+*.sh
+
+# data
+*.zst
+*.tsv
+*.tsv.zst
+*.csv
+*.json
+*.xlsx
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Conda environments or virtualenvs
+.env/
+.venv/
+
