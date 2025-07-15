@@ -351,7 +351,8 @@ jobs:
         if: failure()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number || '10' }}
+          # use issue 27 for testing, otherwise use the issue number from the event
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number || '27' }}
         run: |
           python << 'EOF'
           import os
