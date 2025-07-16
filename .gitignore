@@ -8,13 +8,11 @@ for_communication/output/
 
 for_communication/resources/
 
-for_communication/envs/
 
 # Temporary or backup files
 *.log
 *.tmp
 *.bak
-*.sh
 
 # data
 *.zst
