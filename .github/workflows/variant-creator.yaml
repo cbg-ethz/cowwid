@@ -282,7 +282,8 @@ jobs:
                   'title': title,
                   'head': branch_name,
                   'base': 'master',
-                  'body': body
+                  'body': body,
+                  'assignees': ['gordonkoehn']
               }
               
               try:
