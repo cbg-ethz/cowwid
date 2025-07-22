@@ -206,12 +206,16 @@ jobs:
                 current_date = datetime.now().strftime("%B %d, %Y")
                 body = "# 🧬 New Nextstrain Clade Designation Alert\n\n"
                 body += "⚠️ **Action Required**: A new clade has been assigned by Nextstrain, consider adding it to the wastewater monitoring.\n\n"
+                body += "📌 **Please keep this issue open until the new variant is added**. This triggers automatic variant definition generation as PR from CovSpectrum when the data becomes available. You can also add manually and close.\n\n"
                 body += f"**Date Detected:** {current_date}\n"
                 body += "**Source:** [nextstrain/ncov](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)\n\n"
                 body += "## New Clade(s) Detected\n\n"
 
                 for info in new_clade_info:
+                    clade_display = info['display_name']
+                    covspectrum_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={clade_display}*&"
                     body += f"- **{info['display_name']}** (emerged: {info['formatted_date']})\n"
+                    body += f"  - 🔍 [Check CovSpectrum availability]({covspectrum_url})\n"
 
                 body += f"\n## Summary\n\n"
                 body += f"- **New Clades:** {len(new_clades)}\n"

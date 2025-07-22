@@ -1,8 +1,8 @@
 name: Retry Variant Creation
 on:
   schedule:
-    # Run daily at 18:00 UTC
-    - cron: '0 18 * * *'
+    # Run every 4 hours to retry failed variant creations
+    - cron: '0 */4 * * *'
   workflow_dispatch:
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
 
           GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
           REPO = os.environ['GITHUB_REPOSITORY']
-          MAX_AGE_DAYS = 7  # Maximum age of issues to consider (7 days - Nextclade datasets are updated weekly mondays, or manually)
+          MAX_AGE_DAYS = 2  # Maximum age of issues to consider (2 days - give CovSpectrum time to update)
 
           def get_issues_needing_retry():
               """Find open issues with variant-creation-needed label that are not too old"""
@@ -81,7 +81,7 @@ jobs:
                   'Accept': 'application/vnd.github.v3+json'
               }
               data = {
-                  'ref': 'feat/nextclade_monitor',  # or 'master' when merged
+                  'ref': 'master',  # Use master branch when this is merged
                   'inputs': {
                       'issue_number': str(issue_number)
                   }

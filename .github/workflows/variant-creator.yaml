@@ -257,6 +257,11 @@ jobs:
               }
               
               title = f"Add automated variant definition for {clade_info['display_name']} ({clade_info['nextstrain']})"
+              
+              # Build CovSpectrum URLs
+              display_name = clade_info['display_name']
+              covspectrum_explore_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={display_name}*&"
+              
               body = f"# 🧬 Automated Variant Definition\n\n"
               body += f"This PR adds the automated variant definition for **{clade_info['display_name']}** (Nextstrain clade {clade_info['nextstrain']}).\n\n"
               body += "## Generated Files\n"
@@ -265,6 +270,10 @@ jobs:
               body += f"- **Variant Query**: `{clade_info['display_name']}*`\n"
               body += f"- **Min Proportion**: {MIN_PROPORTION}\n"
               body += f"- **Min Count**: {MIN_COUNT}\n\n"
+              body += "## CovSpectrum Links\n"
+              body += f"- 🔍 [Explore variant data]({covspectrum_explore_url})\n"
+              body += f"- 📊 [View Swiss data](https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={display_name}*&)\n"
+              body += f"- 🌍 [Global data](https://cov-spectrum.org/explore/World/AllSamples/Past6M/variants?nextcladePangoLineage={display_name}*&)\n\n"
               body += f"## Related Issue\n"
               body += f"Closes #{issue_number}\n\n"
               body += "---\n"
@@ -325,7 +334,16 @@ jobs:
                   print(f"❌ No clades found in issue #{issue_number}")
                   continue
               
-              comment_on_issue(f"🔄 **Variant Creation Started**: Processing {len(clades)} clade(s): {', '.join([c['display_name'] for c in clades])}", issue_number)
+              # Build initial comment with CovSpectrum links
+              clade_names = [c['display_name'] for c in clades]
+              start_comment = f"🔄 **Variant Creation Started**: Processing {len(clades)} clade(s): {', '.join(clade_names)}\n\n"
+              start_comment += "## CovSpectrum Links for Verification\n"
+              for clade_info in clades:
+                  display_name = clade_info['display_name']
+                  covspectrum_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={display_name}*&"
+                  start_comment += f"- **{display_name}**: [Check availability]({covspectrum_url})\n"
+              
+              comment_on_issue(start_comment, issue_number)
               
               success_count = 0
               total_clades = len(clades)
@@ -391,7 +409,10 @@ jobs:
                       # Create PR
                       pr_data = create_pr(branch_name, clade_info, filename, issue_number)
                       if pr_data:
-                          comment_on_issue(f"✅ **{display_name}**: Created variant definition with {len(mutations)} mutations - PR #{pr_data['number']} ({pr_data['html_url']})", issue_number)
+                          # Success comment with notification
+                          success_msg = f"✅ **{display_name}**: Created variant definition with {len(mutations)} mutations - PR #{pr_data['number']} ({pr_data['html_url']})\n\n"
+                          success_msg += f"@gordonkoehn - please review the automated variant definition."
+                          comment_on_issue(success_msg, issue_number)
                           success_count += 1
                           total_success_count += 1
                       else:
@@ -413,9 +434,13 @@ jobs:
               
               # Final summary for this issue
               if success_count > 0:
-                  comment_on_issue(f"🎉 **Variant Creation Complete**: Successfully processed {success_count}/{total_clades} clade(s)", issue_number)
+                  final_msg = f"🎉 **Variant Creation Complete**: Successfully processed {success_count}/{total_clades} clade(s)\n\n"
+                  final_msg += f"@gordonkoehn - {success_count} variant definition(s) ready for review."
+                  comment_on_issue(final_msg, issue_number)
               else:
-                  comment_on_issue(f"⚠️ **Variant Creation Incomplete**: Could not process any clades successfully. The workflow will retry automatically in a few hours.", issue_number)
+                  retry_msg = f"⚠️ **Variant Creation Incomplete**: Could not process any clades successfully. The workflow will retry automatically in a few hours.\n\n"
+                  retry_msg += f"@gordonkoehn - this is normal when CovSpectrum hasn't updated with the new variant data yet."
+                  comment_on_issue(retry_msg, issue_number)
               
               print(f"📊 Issue #{issue_number} result: {success_count}/{total_clades} clades processed successfully")
               total_processed_issues += 1
