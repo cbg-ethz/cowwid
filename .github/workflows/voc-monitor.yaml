@@ -229,9 +229,7 @@ jobs:
                 body += "### CovSpectrum Links for New Clades\n"
                 for info in new_clade_info:
                     clade_display = info['display_name']
-                    # URL encode the display name to handle spaces and special characters
-                    encoded_display = urllib.parse.quote(clade_display, safe='')
-                    covspectrum_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={encoded_display}*&"
+                    covspectrum_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={clade_display}*&"
                     body += f"- **{clade_display}**: [Explore variant data]({covspectrum_url})\n"
                 body += "\n### General Resources\n"
                 body += "- 🔬 [Nextstrain SARS-CoV-2 Build](https://nextstrain.org/ncov/global)\n"
