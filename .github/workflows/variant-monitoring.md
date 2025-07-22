@@ -41,12 +41,12 @@ The system consists of three interconnected GitHub Actions workflows:
 - **Safety**: Never modifies master directly, only creates variant branches
 
 #### 3. **variant-retry.yaml** - Failure Recovery
-- **Schedule**: Every 4 hours
+- **Schedule**: Daily at 18:00 UTC
 - **Function**: Retries failed variant creation attempts
 - **Logic**: 
   - Finds open issues with `variant-creation-needed` label
-  - Retries for up to 48 hours (typical CovSpectrum delay: 16-48h)
-  - Handles cases where Nextstrain dataset releases lag behind clade assignment
+  - Retries for up to 7 days (typical CovSpectrum delay: up to 7 days)
+  - Handles cases where CovSpectrum data lags behind clade assignment
 
 ### Data Flow
 
@@ -63,7 +63,7 @@ CovSpectrum API Query
     ↓ (if successful)
 PR Creation → Manual Review → Merge
     ↓ (if failed)
-variant-retry (every 4h for 48h)
+variant-retry (daily 18:00 for 7 days)
 ```
 
 ### Key Features
@@ -85,7 +85,7 @@ This distinction allows easy identification of automation-generated vs manually 
 ## Implemented Github Actions in Cowwid Repo
 
 - **voc-monitor**: Checks daily 08:00 for changes to nextstrain/ncov clade designations, if new detected, opens an issue in cowwid repo, notifies CBG and NEXUS
-- **variant-retry**: Checks every 4 hours if issues in the cowwid repo for new variant designations exist that are not older than 2 days, if so retries variant-creator. May fail initially as nextstrain dataset first has to make a release, hence retry for 2 days.
+- **variant-retry**: Checks daily at 18:00 UTC if issues in the cowwid repo for new variant designations exist that are not older than 7 days, if so retries variant-creator. May fail initially as CovSpectrum takes time to update with new variant data, hence retry for up to 7 days.
 - **variant-creator**: Creates variant definition by querying CovSpectrum API (like CoJac sig-generate), gets all mutations above a certain frequency threshold and minimum number of sequences filters for that clade
 
 ## Contact

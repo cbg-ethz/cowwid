@@ -1,8 +1,8 @@
 name: Retry Variant Creation
 on:
   schedule:
-    # Run every 4 hours to retry failed variant creations
-    - cron: '0 */4 * * *'
+    # Run daily at 18:00 UTC to retry failed variant creations
+    - cron: '0 18 * * *'
   workflow_dispatch:
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
 
           GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
           REPO = os.environ['GITHUB_REPOSITORY']
-          MAX_AGE_DAYS = 2  # Maximum age of issues to consider (2 days - give CovSpectrum time to update)
+          MAX_AGE_DAYS = 7  # Maximum age of issues to consider (7 days - CovSpectrum can take up to 7 days to update with new variant data)
 
           def get_issues_needing_retry():
               """Find open issues with variant-creation-needed label that are not too old"""

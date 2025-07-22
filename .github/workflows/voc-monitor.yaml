@@ -212,10 +212,7 @@ jobs:
                 body += "## New Clade(s) Detected\n\n"
 
                 for info in new_clade_info:
-                    clade_display = info['display_name']
-                    covspectrum_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={clade_display}*&"
                     body += f"- **{info['display_name']}** (emerged: {info['formatted_date']})\n"
-                    body += f"  - 🔍 [Check CovSpectrum availability]({covspectrum_url})\n"
 
                 body += f"\n## Summary\n\n"
                 body += f"- **New Clades:** {len(new_clades)}\n"
@@ -228,6 +225,12 @@ jobs:
                 body += "- Shows significant geographic spread\n\n"
                 body += "Clade names consist of the year they emerged and the next available letter in the alphabet (e.g., 19A, 20A, 21A, etc.).\n\n"
                 body += "## Resources\n\n"
+                body += "### CovSpectrum Links for New Clades\n"
+                for info in new_clade_info:
+                    clade_display = info['display_name']
+                    covspectrum_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={clade_display}*&"
+                    body += f"- **{clade_display}**: [Check CovSpectrum availability]({covspectrum_url})\n"
+                body += "\n### General Resources\n"
                 body += "- 🔬 [Nextstrain SARS-CoV-2 Build](https://nextstrain.org/ncov/global)\n"
                 body += "- 📖 [Clade Naming Documentation](https://docs.nextstrain.org/projects/ncov/en/latest/reference/naming_clades.html)\n"
                 body += "- 📂 [Source File](https://github.com/nextstrain/ncov/blob/master/defaults/clade_hierarchy.tsv)\n"
