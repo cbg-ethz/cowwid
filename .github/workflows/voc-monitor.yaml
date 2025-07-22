@@ -43,6 +43,7 @@ jobs:
             from datetime import datetime
             import sys
             import yaml
+            import urllib.parse
 
             # Configuration
             STORED_FILE = '.github/nextstrain-monitor/previous_clade_hierarchy.tsv'
@@ -228,8 +229,10 @@ jobs:
                 body += "### CovSpectrum Links for New Clades\n"
                 for info in new_clade_info:
                     clade_display = info['display_name']
-                    covspectrum_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={clade_display}*&"
-                    body += f"- **{clade_display}**: [Check CovSpectrum availability]({covspectrum_url})\n"
+                    # URL encode the display name to handle spaces and special characters
+                    encoded_display = urllib.parse.quote(clade_display, safe='')
+                    covspectrum_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={encoded_display}*&"
+                    body += f"- **{clade_display}**: [Explore variant data]({covspectrum_url})\n"
                 body += "\n### General Resources\n"
                 body += "- 🔬 [Nextstrain SARS-CoV-2 Build](https://nextstrain.org/ncov/global)\n"
                 body += "- 📖 [Clade Naming Documentation](https://docs.nextstrain.org/projects/ncov/en/latest/reference/naming_clades.html)\n"

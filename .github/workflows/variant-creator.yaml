@@ -273,7 +273,6 @@ jobs:
               body += "## CovSpectrum Links\n"
               body += f"- 🔍 [Explore variant data]({covspectrum_explore_url})\n"
               body += f"- 📊 [View Swiss data](https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={display_name}*&)\n"
-              body += f"- 🌍 [Global data](https://cov-spectrum.org/explore/World/AllSamples/Past6M/variants?nextcladePangoLineage={display_name}*&)\n\n"
               body += f"## Related Issue\n"
               body += f"Closes #{issue_number}\n\n"
               body += "---\n"
