@@ -229,7 +229,7 @@ jobs:
                 body += "### CovSpectrum Links for New Clades\n"
                 for info in new_clade_info:
                     # filter what is in the brackets from the display name
-                    clade_name  = info['display_name'].split(' (')[0]
+                    clade_name  = info['display_name'].split(' (')[1].split(')')[0]
                     covspectrum_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={clade_name}*&"
                     body += f"- **{info['display_name']}**: [Explore variant data]({covspectrum_url})\n"
                 body += "\n### General Resources\n"
