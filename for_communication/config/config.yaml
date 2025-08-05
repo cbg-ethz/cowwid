@@ -3,7 +3,7 @@
 ################################  Generate Curves  ################################
 # Input
 datadir: "/cluster/project/pangolin/work-vp-test/variants"
-jsonfile_smooth: "/cluster/project/pangolin/work-vp-test/variants/deconvoluted_upload.json"
+jsonfile_smooth: "/cluster/project/pangolin/work-vp-test/variants/bck_20250804_deconvoluted_upload.json"
 
 # Output
 plots_dir: "/cluster/project/pangolin/cowwid/for_communication/plots"
@@ -86,8 +86,10 @@ Public_polybox_url: "https://bs-pangolin@polybox.ethz.ch/remote.php/dav/files/bs
 
 ################################  Switzerland map ################################
 
-deconvolution:  "/cluster/project/pangolin/work-vp-test/variants/deconvoluted.tsv.zst"
+#Input
+deconvolution:  "/cluster/project/pangolin/work-vp-test/variants/bck_20250804_deconvoluted.tsv.zst"
 
+#Resources
 switzerland_map: "/cluster/project/pangolin/cowwid/for_communication/resources/switzerland.geojson"
 kantons_map: "/cluster/project/pangolin/cowwid/for_communication/resources/swiss_kantons.geojson"
 swiss_cities: "/cluster/project/pangolin/cowwid/for_communication/resources/swiss_cities.csv"
