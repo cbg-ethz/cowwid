@@ -1,0 +1,120 @@
+general:
+    aligner: bwa
+    primers_trimmer: samtools
+    threads: 6
+    #temp_prefix: xxx
+    preprocessor: skip
+
+
+input:
+    datadir: samples/
+    samples_file: samples_aviti.tsv
+    #reference: references/NC_045512.2.fasta
+    metainfo_file: references/metainfo.yaml
+    gff_directory: references/gffs/
+    #primers_file: references/primers/v41/nCoV-2019.tsv
+    #primers_bedfile: references/primers/v41/nCoV-2019.primer.bed
+    protocols_file: references/primers.yaml
+    #inserts_bedfile: references/primers/v41/SARS-CoV-2.insert.bed
+    #genes_gff: references/gffs/Genes_NC_045512.2.GFF3
+    variants_def_directory: references/voc/
+    
+    
+output:
+    datadir: samples/
+    cohortdir: ../variants/
+    trim_primers: True
+    snv: False
+    local: False
+    global: False
+    visualization: False
+    QA: True
+    dehumanized_raw_reads: True
+    upload: True
+    
+gunzip:
+    mem: 100000
+    
+extract:
+    mem: 100000
+    
+preprocessing:
+    mem: 10000
+    
+sam2bam:
+    mem: 5000
+    
+ref_bwa_index:
+    mem: 65536
+    
+bwa_align:
+    mem: 40690
+    threads: 8
+    # linear scale breaks at 8~16 (See: https://www.researchgate.net/figure/Performance-of-Multi-Threading-CPU-time-and-walltime-usage-of-BWA-Mem-and-GATK_fig3_275950273)
+    #  2: 2739, 4: 5012, 6: 6045, 8: 6404 /8995
+    
+bowtie_align:
+    mem: 12288
+    threads: 6
+    
+    
+hmm_align:
+    leave_msa_temp: true
+    
+timeline:
+    locations_table: ww_locations.tsv
+    regex_yaml: regex.yaml
+    
+deconvolution:
+    threads: 16
+    deconvolution_config: deconv_mcgill.yaml
+    variants_config: variant_config.yaml
+    variants_dates: var_dates.yaml
+    out_format: columns 
+    
+frameshift_deletions_checks:
+    mem: 8192
+    
+coverage:
+    mem: 131072
+    threads: 32
+    time: 60
+    
+minor_variants:
+    mem: 16384
+    threads: 64
+    
+upload:
+    consensus: majority
+    options: -R
+    orig_fastq: false
+    orig_cram: True
+    
+dehuman:
+    mem: 65536
+    threads: 16
+    time: 540
+    keep_host: True
+    catchup: False
+    
+web_visualization:
+    mem: 2000
+    
+coverage_intervals:
+    coverage: 0
+    mem: 2000
+    threads: 1
+    
+lofreq:
+    consensus: false
+    
+snv:
+    consensus: false
+    localscratch: $TMPDIR
+    ### NOTE the next three parameters are going to be edited by a sed script
+    # as follows:    time    meme    threads
+    # - normal:    240    1024    64
+    # - hugemem:    1200    32768    63
+    time: 2400
+    mem: 4096
+    threads: 64

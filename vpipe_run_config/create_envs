@@ -1,0 +1,20 @@
+#!/bin/bash
+
+usage() { echo "Usage: $0 [-p] [snakemake options...] " 1>&2; exit $1; }
+
+while getopts "ph" o; do
+	case "${o}" in
+		p)	echo "Using proxy"
+			. /etc/profile.d/software_stack_default.sh
+			module load eth_proxy
+			;;
+		h)	usage 0	;;
+		*)	usage 2	;;
+	esac
+done
+shift $((OPTIND-1))
+
+umask 0007
+
+echo "${https_proxy}"
+exec ./vpipe --configfile config.create-envs.yaml --conda-create-envs-only -j 1 "$@"

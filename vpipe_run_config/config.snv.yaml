@@ -1,0 +1,19 @@
+# config: normal SNV settings (64 threads shorah)
+
+input:
+  samples_file: samples.wastewateronly.tsv
+
+output:
+  snv: true
+  local: true
+  global: false
+  visualization: true
+  QA: true
+
+#snv:
+    ##mem: 1024
+    ###mem: 2048
+    #mem: 65536
+    #threads: 64
+    #time: 240
+

@@ -1,0 +1,10 @@
+input:
+  #samples_file: samples.wastewateronly.tsv
+  samples_file: ../sampleset/samples.20210709_BPA73113-1417.tsv
+
+output:
+  snv: false
+  local: false
+  global: false
+  visualization: false
+  QA: false

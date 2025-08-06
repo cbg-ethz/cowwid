@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+umask 0007
+. ../miniconda3/bin/activate 'base'
+mkdir --mode=0770 -p "${SCRATCH}/pangolin/"{shadow,temp}
+exec -a "$0" snakemake --cores 4 -s "../V-pipe/workflow/Snakefile" --conda-prefix "../snake-envs" --shadow-prefix "${SCRATCH}/pangolin/shadow" --rerun-trigger mtime --use-conda "$@"

@@ -1,0 +1,20 @@
+# config: big ShoRAH run (8 threads only)
+
+input:
+  samples_file: samples.wastewateronly.tsv
+
+output:
+  snv: true
+  local: true
+  global: false
+  visualization: true
+  QA: true
+
+snv:
+    #time: 240
+    #mem: 32768
+    mem: 524288
+    #threads: 8
+    #threads: 63
+    threads: 16
+    time: 1400

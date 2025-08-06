@@ -1,0 +1,443 @@
+#!/bin/bash
+#SBATCH --job-name="COVID-qa"
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=4096
+#SBATCH --time="4:00:00"
+
+batches=()
+
+# if script wasn't editted on-the-fly, but parameters where passed
+#if (( ${#batches[@]} == 0 )) && (( $# )); then
+if (( $# )); then
+	batches+=( "$@" )
+fi
+
+umask 0007
+
+idx="$SLURM_ARRAY_TASK_ID"
+
+if [[ "$idx" =~ ^[0-9]+$ ]] && (( idx >= 0 )); then
+	echo "JobIdx $idx"
+
+	batch=${batches[$idx]}
+
+	# check if samplename is ok
+	if [[ -z "${batch}" ]]; then
+		echo "wrong job index ${idx}"
+		echo "Max is ${#batches[@]}"
+		exit 1;
+	fi
+	input_tsv="${TMPDIR:+$TMPDIR/}samples.qa-${batch}.tsv"
+	output_csv="qa/qa.${batch}.csv"
+	echo "batch: ${batch}"
+	echo "output: ${output_csv}"
+	gawk -v b="${batch}" '$2==b' < samples.tsv > ${input_tsv}
+	echo "tsv: ${input_tsv}"
+	wc -l ${input_tsv}
+else
+	echo "to run with all, use:"
+	echo " - sbatch --array=$(( ${batch[0]:--1} * -1))-$(( ${#batches[@]} - 1)) gather1qa $*"
+	exit 1
+fi
+
+
+return_fail=0
+
+# Helper
+fail() {
+	printf '\e[31;1mArgh:\t%s\e[0m\n'	"$1"	1>&2
+	[[ -n "$2" ]] && echo "$2" 1>&2
+	exit 1
+}
+
+argh() {
+	printf '\e[31;1mArgh:\t%s\e[0m\n'	"$1"	1>&2
+	[[ -n "$2" ]] && echo "$2" 1>&2
+	return_fail=1
+}
+
+oops() {
+	printf '\e[33;1mOops:\t%s\e[0m\n'	"$1"	 1>&2
+}
+
+info() {
+	printf '\e[36;1mInfo:\t%s\e[0m\n'	"$1"	 1>&2
+}
+
+
+# fastqc search strings
+declare -A fqcsearch
+fqcsearch=( 
+	['basequal']='Per base sequence quality'
+	['tilequal']='Per tile sequence quality'
+	['seqqual']='Per sequence quality scores'
+	['basecont']='Per base sequence content'
+	['gc']='Per sequence GC content'
+	['n']='Per base N content' 
+	['len']='Sequence Length Distribution'
+	['dup']='Sequence Duplication Levels'
+	['over']='Overrepresented sequences'
+	['adapt']='Adapter Content'
+	['kmer']='Kmer Content'
+)
+fqckeys=( "${!fqcsearch[@]}" ) # keep all findings
+# load REF_aln_stats YAML
+declare -A alnsearch
+alnsearch=(
+	['alnreads']=' reads'
+	['coverage_1q']=' 25%'
+	['coverage_median']=' 50%'
+	['coverage_3q']=' 75%'
+	['coverage_mean']=' mean'
+)
+alnkeys=( "${!alnsearch[@]}" ) # keep all findings
+# matcher search strings
+declare -A matchsearch
+matchsearch=( 
+	['len']='Length'
+	['id']='Identity'
+	['simil']='Similarity'
+	['gaps']='Gaps'
+	['score']='Score'
+)
+matchkeys=( "${!matchsearch[@]}" ) # keep all findings
+
+# labs
+declare -A labs
+for b in ../sampleset/batch.*.yaml; do
+	if [[ ! ${b} =~ batch\.([[:digit:]]{8}_[[:alnum:]-]+)\.yaml$ ]]; then
+		argh "Cannot parse: <${b}>"
+		continue
+	fi
+	batch="${BASH_REMATCH[1]}"
+
+	if [[ ! "$(<${b})" =~ lab\ *:\ *([[:alnum:]]+)\ * ]]; then
+		argh "Cannot find lab for: <${b}>"
+		continue
+	fi
+	labs[${batch}]="${BASH_REMATCH[1]}"
+done
+
+# header and data
+qacolumn=( 'sample' 'batch' 'lab'
+"${fqckeys[@]/#/fastqc_r1_}"
+"${fqckeys[@]/#/fastqc_r2_}"
+'input_r1' 'input_r2' 'mlen_r1' 'mlen_r2' 'goodpairs'
+"${alnkeys[@]}"
+'bwaFF' 'bwaFR' 'bwaRF' 'bwaRR' 'bwadir' 'bwa_insert_mean' 'bwa_insert_min' 'bwa_insert_max'
+'consensus_N' 'consensus_lower' 
+"${matchkeys[@]/#/match_}"
+'shorah_snv' 'shorah_filtered' 'shorah_majority' 'shorah_absmaj'
+)
+declare -A qadata
+{
+printf '%s,' "${qacolumn[@]}"
+echo
+### With:
+### - sample:	sample name
+### - batch:	batch
+### - empty:	true if this sample should contain nothing (e.g.: only water),  -ofalse if it should contain viral RNA
+### - groundtruth:	(we actually know the ground trurth. E.g.: synthetic RNA should match reference strains, empty should match "N" (or lower case until Susie updates her code)
+### - input_r{1,2}:	the raw_data R1 and R2 at the input of the pipeline
+### - mlean_r{1,2}:	the mean read lenght in each file (in our case, should be 250 in both directions)
+### - goodpairs:	the amount of good quality pairs kept after prinseq filtering. (note: pairs, not reads)
+### - alnreads:	the amount of aligned reads in the bam file. (note: reads, not pairs)
+### - bwa{FF,FR,RF,RR}:	the amount of candidate in each orientation that bwa considered
+### - bwadir:	the maximum of the above (should be FR in the current MiSeq protocol)
+### - bwa_instead_{mean,min,max}:	mean, minimum and maximum size of the inserts (in our protocol, that should be ~400)
+
+filecounter=0
+while read subject sublvl len; do
+	qadata=( )
+	echo -ne "\r$((++filecounter))\t${subject}\e[K\t" 1>&2
+	sample=samples/${subject}/${sublvl}
+	qadata['sample']=$subject
+	qadata['batch']=$sublvl
+
+	# 0 Flags
+	if [ -z "${labs[${sublvl}]}" ]; then
+		oops "lab missing for ${sublvl}"
+	else
+		qadata['lab']="${labs[${sublvl}]}"
+	fi
+# 	if [[ $subject =~ ^[[:digit:]]{6}_ ]]; then
+# 		qadata['empty']=0
+# 		qadata['groundtruth']=0
+# 	elif [[ $subject =~ ^pos_ ]]; then
+# 		qadata['empty']=0
+# 		qadata['groundtruth']=1
+# 	elif [[ $subject =~ ^(neg|H2O|EMPTY)_ ]]; then
+# 		qadata['empty']=1
+# 		qadata['groundtruth']=1
+# 	else
+# 		oops "cannot understand name $subject"
+# 	fi
+
+
+	# 1 FastQC
+	#fastqc_files=( ../openbis-downloads/202*/original/*/*_${subject}_*_R[12]_*_fastqc.html )
+	fastqc_files=( ${sample}/extracted_data/R[12]_fastqc.html )
+	if (( ${#fastqc_files[@]} != 2 )); then
+		oops "Didn't find a pair of FastQC files for ${subject}"
+	else
+		for num in 1 2; do
+			fastqc_file="${fastqc_files[num-1]}"
+			fastqc="$(< ${fastqc_file} )"
+			#echo $fastqc_file
+	# <div class="summary"><h2>Summary</h2><ul><li><img src="{...}" alt="[PASS]"/><a href="#M0">Basic Statistics</a></li><li><img src="{...}" alt="[PASS]"/><a href="#M1">Per base sequence quality</a></li><li><img src="{...}" alt="[PASS]"/><a href="#M2">Per tile sequence quality</a></li><li><img src="{...}" alt="[PASS]"/><a href="#M3">Per sequence quality scores</a></li><li><img src="{...}" alt="[WARNING]"/>
+	#		[[ $fastqc =~ \<div\ class=\"summary\"\>\<h2\>Summary\</h2\>\<ul\>(\<li\>\<img\ src=\"[^\"]+\"\ alt=\"\[[^\]]+\]\"/\>\<a\ href=\"#M[[:digit:]]+\"\>[^\<]+\</a\>\</li\>)+\</ul\>\</div\> ]]
+
+			i=1
+			for k in ${fqckeys[@]}; do
+				S=${fqcsearch[${k}]}
+				rex="<li><img src=\"[^\"]+\" alt=\"\[([^]]+)\]\"/><a href=\"#M[[:digit:]]+\">$S</a></li>"
+				[[ $fastqc =~ $rex ]] && qadata["fastqc_r${num}_$k"]=${BASH_REMATCH[1]} || oops "cannot extract ${S}"
+				#echo "$k : $S : ${#BASH_REMATCH[@]} : ${BASH_REMATCH[1]}"
+				(( ++i ))
+			done
+		done
+	fi
+
+
+	# 2 read counts
+
+	# 2.1 prinseq
+	# Input and filter stats:
+	#         Input sequences (file 1): 167,852
+	#         Input bases (file 1): 42,130,852
+	#         Input mean length (file 1): 251.00
+	#         Input sequences (file 2): 167,852
+	#         Input bases (file 2): 42,130,852
+	#         Input mean length (file 2): 251.00
+	#         Good sequences (pairs): 139,841
+	#         Good bases (pairs): 70,087,643
+	#         Good mean length (pairs): 501.20
+	#         Good sequences (singletons file 1): 11,931 (7.11%)
+	#         Good bases (singletons file 1): 2,958,576
+	#         Good mean length (singletons file 1): 247.97
+	#         Good sequences (singletons file 2): 1,756 (1.05%)
+	#         Good bases (singletons file 2): 431,401
+	#         Good mean length (singletons file 2): 245.67
+	#         Bad sequences (file 1): 16,080 (9.58%)
+	#         Bad bases (file 1): 4,036,080
+	#         Bad mean length (file 1): 251.00
+	#         Bad sequences (file 2): 11,931 (7.11%)
+	#         Bad bases (file 2): 2,994,681
+	#         Bad mean length (file 2): 251.00
+
+	prinseq="$(<${sample}/preprocessed_data/prinseq.err.log)"
+	[[ $prinseq =~ Input\ sequences\ \(file\ 1\)\:\ ([[:digit:],]+) ]]	&& qadata['input_r1']="${BASH_REMATCH[1]//,/}"	|| oops "missing input sequences 1"
+	[[ $prinseq =~ Input\ sequences\ \(file\ 2\):\ ([[:digit:],]+) ]]	&& qadata['input_r2']="${BASH_REMATCH[1]//,/}"	|| oops "missing input sequences 2"
+	[[ $prinseq =~ Input\ mean\ length\ \(file\ 1\):\ ([[:digit:],.]+) ]]	&& qadata['mlen_r1']="${BASH_REMATCH[1]//,/}"	|| oops "missing mean length  1"
+	[[ $prinseq =~ Input\ mean\ length\ \(file\ 2\):\ ([[:digit:],.]+) ]]	&& qadata['mlen_r2']="${BASH_REMATCH[1]//,/}"	|| oops "missing mean length 2"
+	[[ $prinseq =~ Good\ sequences\ \(pairs\):\ ([[:digit:],]+) ]]	&& qadata['goodpairs']="${BASH_REMATCH[1]//,/}"	|| oops "missing good pairs"
+
+	# 2.2 count bamfile
+	alnstat=$(<${sample}//alignments/REF_aln_stats.yaml)
+	for k in ${alnkeys[@]}; do
+		S="${alnsearch[${k}]}"
+		rex="${S}: ([[:digit:].]+)"
+		[[ $alnstat =~ $rex ]] && qadata["$k"]=${BASH_REMATCH[1]} || oops "cannot extract ${S} for ${k}"
+	done
+
+	# 2.3 alignement
+	# [M::bwa_idx_load_from_disk] read 0 ALT contigs
+	# [M::process] read 161884 sequences (40000099 bp)...
+	# [M::mem_pestat] # candidate unique pairs for (FF, FR, RF, RR): (37, 80736, 52, 35)
+	# [M::mem_pestat] analyzing insert size distribution for orientation FF...
+	# [M::mem_pestat] (25, 50, 75) percentile: (2006, 3731, 6489)
+	# [M::mem_pestat] low and high boundaries for computing mean and std.dev: (1, 15455)
+	# [M::mem_pestat] mean and std.dev: (4410.19, 2727.09)
+	# [M::mem_pestat] low and high boundaries for proper pairs: (1, 19938)
+	# [M::mem_pestat] analyzing insert size distribution for orientation FR...
+	# [M::mem_pestat] (25, 50, 75) percentile: (380, 386, 393)
+	# [M::mem_pestat] low and high boundaries for computing mean and std.dev: (354, 419)
+	# [M::mem_pestat] mean and std.dev: (387.80, 10.78)
+	# [M::mem_pestat] low and high boundaries for proper pairs: (341, 432)
+	# [M::mem_pestat] analyzing insert size distribution for orientation RF...
+	# [M::mem_pestat] (25, 50, 75) percentile: (251, 1529, 5565)
+	# [M::mem_pestat] low and high boundaries for computing mean and std.dev: (1, 16193)
+	# [M::mem_pestat] mean and std.dev: (2987.12, 3078.77)
+	# [M::mem_pestat] low and high boundaries for proper pairs: (1, 21507)
+	# [M::mem_pestat] analyzing insert size distribution for orientation RR...
+	# [M::mem_pestat] (25, 50, 75) percentile: (2124, 4730, 7576)
+	# [M::mem_pestat] low and high boundaries for computing mean and std.dev: (1, 18480)
+	# [M::mem_pestat] mean and std.dev: (4755.29, 2956.29)
+	# [M::mem_pestat] low and high boundaries for proper pairs: (1, 23932)
+	# [M::mem_pestat] skip orientation FF
+	# [M::mem_pestat] skip orientation RF
+	# [M::mem_pestat] skip orientation RR
+	# [M::process] read 117798 sequences (29069239 bp)...
+	# [M::mem_process_seqs] Processed 161884 reads in 10.130 CPU sec, 4.982 real sec
+	# [M::mem_pestat] # candidate unique pairs for (FF, FR, RF, RR): (19, 58735, 50, 19)
+	# [M::mem_pestat] analyzing insert size distribution for orientation FF...
+	# [M::mem_pestat] (25, 50, 75) percentile: (3115, 5497, 9047)
+	# [M::mem_pestat] low and high boundaries for computing mean and std.dev: (1, 20911)
+	# [M::mem_pestat] mean and std.dev: (5381.47, 3127.93)
+	# [M::mem_pestat] low and high boundaries for proper pairs: (1, 26843)
+	# [M::mem_pestat] analyzing insert size distribution for orientation FR...
+	# [M::mem_pestat] (25, 50, 75) percentile: (380, 386, 393)
+	# [M::mem_pestat] low and high boundaries for computing mean and std.dev: (354, 419)
+	# [M::mem_pestat] mean and std.dev: (387.75, 10.84)
+	# [M::mem_pestat] low and high boundaries for proper pairs: (341, 432)
+	# [M::mem_pestat] analyzing insert size distribution for orientation RF...
+	# [M::mem_pestat] (25, 50, 75) percentile: (268, 1098, 5165)
+	# [M::mem_pestat] low and high boundaries for computing mean and std.dev: (1, 14959)
+	# [M::mem_pestat] mean and std.dev: (2968.52, 3113.17)
+	# [M::mem_pestat] low and high boundaries for proper pairs: (1, 19856)
+	# [M::mem_pestat] analyzing insert size distribution for orientation RR...
+	# [M::mem_pestat] (25, 50, 75) percentile: (3384, 4840, 6376)
+	# [M::mem_pestat] low and high boundaries for computing mean and std.dev: (1, 12360)
+	# [M::mem_pestat] mean and std.dev: (4947.89, 2364.95)
+	# [M::mem_pestat] low and high boundaries for proper pairs: (1, 15352)
+	# [M::mem_pestat] skip orientation FF
+	# [M::mem_pestat] skip orientation RF
+	# [M::mem_pestat] skip orientation RR
+	# [M::mem_process_seqs] Processed 117798 reads in 5.316 CPU sec, 2.012 real sec
+
+	alignseq=0
+	qadata['bwaFF']=0
+	qadata['bwaFR']=0
+	qadata['bwaRF']=0
+	qadata['bwaRR']=0
+	bwadirections=( '' 'FF' 'FR' 'RF' 'RR')
+	maxdir='FR'
+	analyzing=0
+	num=0
+	qadata['bwa_insert_mean']=0
+	qadata['bwa_insert_min']=''
+	qadata['bwa_insert_max']=''
+	while read line; do
+		[[ $line =~ ^\[ ]] || break;
+
+		if [[ $line =~ \[M::process\]\ read\ ([[:digit:]]+)\ sequences ]]; then
+			(( alignseq += BASH_REMATCH[1] ))
+		elif [[ $line =~ \[M::mem_pestat\]\ #\ candidate\ unique\ pairs\ for\ \(FF,\ FR,\ RF,\ RR\):\ \(([[:digit:]]+),\ ([[:digit:]]+),\ ([[:digit:]]+),\ ([[:digit:]]+)\) ]]; then
+			max=0
+			for (( d = 1; d <= 4; ++d)); do
+				(( qadata["bwa${bwadirections[d]}"] += BASH_REMATCH[d] ))
+				if (( max < qadata["bwa${bwadirections[d]}"] )); then
+					max=qadata["bwa${bwadirections[d]}"]
+					maxdir=${bwadirections[d]}
+					qadata['bwadir']=$maxdir
+				fi
+			done
+		elif [[ $line =~ \[M::mem_pestat\]\ analyzing\ insert\ size\ distribution\ for\ orientation\ ([FR]{2})\.\.\. ]]; then
+			[[ "${BASH_REMATCH[1]}" == "$maxdir" ]] && analyzing=1 || analyzing=0
+		elif (( analyzing )) && [[ $line =~ \[M::mem_pestat\]\ mean\ and\ std\.dev:\ \(([[:digit:]]+) ]]; then
+			(( qadata['bwa_insert_mean'] += BASH_REMATCH[1] ))
+			(( num++ ))
+		elif (( analyzing )) && [[ $line =~ \[M::mem_pestat\]\ low\ and\ high\ boundaries\ for\ proper\ pairs:\ \(([[:digit:]]+),\ ([[:digit:]]+)\) ]]; then
+			if [[ -z "${qadata['bwa_insert_min']}" ]] || (( qadata['bwa_insert_min']>BASH_REMATCH[1] )); then qadata['bwa_insert_min']=${BASH_REMATCH[1]}; fi
+			if [[ -z "${qadata['bwa_insert_max']}" ]] || (( qadata['bwa_insert_max']<BASH_REMATCH[2] )); then qadata['bwa_insert_max']=${BASH_REMATCH[2]}; fi
+		fi
+	done < ${sample}/alignments/bwa_align.err.log
+	(( qadata['bwa_insert_mean'] /= num ))
+	# NOTE seq / 2 == pairs
+	(( ( alignseq /= 2 ) != qadata['goodpairs'] )) && oops "goodpairs <${qadata['goodpairs']}> and alignement input <${alignseq}> missmatch"
+
+	# 3. consensus
+
+	# 3.1 counts
+	qadata['consensus_N']=$(tail -n +2 ${sample}/references/ref_majority_dels.fasta | tr -cd 'Nn' | wc -c)
+	qadata['consensus_lower']=$(tail -n +2 ${sample}/references/ref_majority_dels.fasta | tr -cd 'atcg' | wc -c)
+
+	# 3.2 pair-wise alignments
+	#=======================================
+	#
+	# Aligned_sequences: 2
+	# 1: NC_045512.2
+	# 2: 100799_109_E11-20200409
+	# Matrix: EDNAFULL
+	# Gap_penalty: 16
+	# Extend_penalty: 4
+	#
+	# Length: 29836
+	# Identity:   29210/29836 (97.9%)
+	# Similarity: 29210/29836 (97.9%)
+	# Gaps:           0/29836 ( 0.0%)
+	# Score: 144784
+	# 
+	#
+	#=======================================
+	if [[ -e ${sample}/references/ref_majority_dels.matcher && ${sample}/references/ref_majority_dels.fasta -ot ${sample}/references/ref_majority_dels.matcher ]]; then
+		: # reuse the file
+	else
+		#matcher -asequence references/cohort_consensus.fasta -bsequence ${sample}/references/ref_majority_dels.fasta -outfile ${sample}/references/ref_majority_dels.matcher 1>&2
+		oops "(match missing)"
+	fi
+	if [[ -s ${sample}/references/ref_majority_dels.matcher ]]; then
+		# "nnnnnnnnnnnnnn" files generate empty files
+		match=$(<${sample}/references/ref_majority_dels.matcher)
+		for k in ${matchkeys[@]}; do
+			S=${matchsearch[${k}]}
+			rex="# $S: +([[:digit:]]+)"
+			[[ $match =~ $rex ]] && qadata["match_$k"]=${BASH_REMATCH[1]} || oops "cannot extract ${S}"
+		done
+	else
+		oops "(empty match: probably pure 'nnnn...' crap consensus)"
+	fi
+
+	# 4 ShoRAH
+	if [[ -s ${sample}/variants/SNVs/snvs.vcf ]]; then
+#		qadata['shorah_snv']=$(grep -c '^[^#]' ${sample}/variants/SNVs/snvs.vcf)
+#		qadata['shorah_filtered']=$(gawk -vscore=.8 'BEGIN{phred=-10*(log(1-score)/log(10))};/^[^#]/&&($6>=phred){n++};END{print n}' ${sample}/variants/SNVs/snvs.vcf)
+		shorah=( $(gawk -vscore=.8 -vfreq=.5 '
+			BEGIN{
+				phred=(-10*(log(1-score)/log(10)))
+				lastposition=-1
+				original_fraction=3;
+				max_fraction=0;
+				multi=0;
+			};
+			/^[^#]/{
+				++SNV;
+			};
+			/^[^#]/&&($6>=phred){
+				filter++;
+				if ($1 != lastposition) {
+					if (max_fraction > original_fraction) {
+						++majority;
+					}
+					if (multi>=2) {
+						print " double at " lastposition "\n" > /dev/stderr
+					}
+					original_fraction=3;
+					max_fraction=0;
+					multi=0;
+					lastposition=$2;
+				}
+				match($8,/Freq1=([[:digit:].]+);Freq2=([[:digit:].]+);Freq3=([[:digit:].]+);/,F);
+				sum=(F[1]+F[2]+F[3]);
+				original_fraction-=sum;
+				if(sum>max_fraction) max_fraction=sum;
+				if(sum>=(3*freq)) ++abs_majority;
+				++multi;
+			};
+			END{
+				if (max_fraction > original_fraction) {
+					++majority;
+				}
+				printf("%u\n%u\n%u\n%u\n", SNV, filter, majority, abs_majority)
+			}'  ${sample}/variants/SNVs/snvs.vcf) )
+		qadata['shorah_snv']=${shorah[0]}
+		qadata['shorah_filtered']=${shorah[1]}
+		qadata['shorah_majority']=${shorah[2]}
+		qadata['shorah_absmaj']=${shorah[3]}
+	elif [[ -f ${sample}/variants/SNVs/snvs.vcf ]]; then
+		: # empty SNVs files : no reads in region (negative control)
+	else
+		oops 'no SNVs ShoRAH not ran yet'
+	fi
+
+	# X. data line
+	for k in "${qacolumn[@]}"; do
+		printf '%s,' ${qadata[$k]}
+	done
+	echo
+done < "${input_tsv}"
+} > "${output_csv}"
+if (( return_fail )); then
+	fail "Critical errors have been found. Output isn't consistent"
+fi
+info 'Done.'
