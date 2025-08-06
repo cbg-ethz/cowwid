@@ -30,3 +30,5 @@ __pycache__/
 .env/
 .venv/
 
+# ignore all sensitive data
+vpipe_run_config/slurm_email_recipients
