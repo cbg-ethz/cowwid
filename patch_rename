@@ -1,0 +1,158 @@
+#!/bin/bash
+
+scriptdir="$(dirname $(which $0))"
+
+. ${scriptdir}/server.conf
+
+: ${basedir:=$(pwd)}
+: ${sampleset:=sampleset}
+: ${working:=working}
+
+cd ${basedir}
+
+
+# Helper
+fail() {
+	printf '\e[31;1mArgh: %s\e[0m\n'	"$1"	1>&2
+	[[ -n "$2" ]] && echo "$2" 1>&2
+	exit 1
+}
+
+oops() {
+	printf '\e[33;1mOops:%s\e[0m\n'	"$1"	 1>&2
+}
+
+title() {
+	printf '\e[34;1m======================\n%s\n======================\e[0m\n\n'	"$1"
+}
+
+message() {
+	printf '\e[37;1m%s\t%s\e[0m\n' "$1" "$2"
+}
+
+status() {
+	printf '\e[36;1m%s\e[0m\n'	"$1"
+}
+
+
+# fetch batch description
+if [[ -z "${1}" || "${1}" == "--help" ]]; then
+	cat <<USAGE
+Usage:
+	$0 [ --patch <patchfile> ] <batchname>
+Applies samplename patch after the fact.
+USAGE
+	exit
+fi
+
+# forced patchname ?
+patchfile=
+if [[  "${1}" == "--patch" ]]; then
+	shift
+	patchfile="${1}"
+	shift
+fi
+
+# get batch
+batchname="${1}"
+byml="${sampleset}/batch.${batchname}.yaml"
+[[ -r "${byml}" ]] || fail "Cannot open ${byml}"
+
+# get patchname (if not provided)
+if [[ -z "${patchfile}" ]]; then
+	echo "autodetecting patchmap for ${batchname}"
+	# parse batch description
+	batch=$(<${byml})
+	[[ "${batch}" =~ lab:[[:space:]]+([[:alnum:]]+) ]] || fail "Cannot find lab" $'file was:\n'"${batch}"
+	lab="${BASH_REMATCH[1]}"
+	case "$lab" in
+		fgcz)
+			echo "patch remapping for fgcz"
+			if [[ "${2}" == "--force" ]]; then
+				patchfile="${3}"
+				echo "forcing patchfile ${patchfile}"
+			else
+				# TODO fallback to projects.{batch}.tsv
+				[[ "${batch}" =~ order:[[:space:]]+o?([[:digit:]]+) ]] || fail "Cannot find order" $'file was:\n'"${batch}"
+				order="${BASH_REMATCH[1]}"
+				echo "order ${order}"
+				[[ "${batch}" =~ project:[[:space:]]+p?([[:digit:]]+) ]] || fail "Cannot find project" $'file was:\n'"${batch}"
+				project="${BASH_REMATCH[1]}"
+				echo "project ${project}"
+				patchfile="${sampleset}/patch.${project}.${order}.tsv"
+			fi
+		;;
+		*)
+			fail "Unknown lab $lab"
+		;;
+	esac
+fi
+
+# look for patchfile
+[[ -r "${patchfile}" ]] || fail "Cannot open ${patchfile}"
+echo "patchfile: ${patchfile}"
+
+# patch samples in sampleset and working
+declare -A map
+while read old new trash; do
+	map[$old]="${new}"
+
+	if [[ -e "${working}/samples/${new}" ]]; then
+		oops "$old -> $new already moved"
+		continue
+	fi
+
+	longold="${old}-${batchname}"
+	longnew="${new}-${batchname}"
+
+	mkdir -p "${sampleset}/${new}"
+	mv -v "${sampleset}/${old}/${batchname}" "${sampleset}/${new}/"
+	touch --reference="${sampleset}/${old}" "${sampleset}/${new}"
+	rmdir "${sampleset}/${old}"
+
+	mkdir -p "${working}/samples/${new}"
+	mv -v "${working}/samples/${old}/${batchname}" "${working}/samples/${new}/"
+	
+	mv "${working}/samples/${new}/${batchname}/alignments/basecnt.tsv.gz"{,.old}
+	zcat "${working}/samples/${new}/${batchname}/alignments/basecnt.tsv.gz.old" | sed "1s/${longold}/${longnew}/g" | gzip >"${working}/samples/${new}/${batchname}/alignments/basecnt.tsv.gz"
+	touch --reference="${working}/samples/${new}/${batchname}/alignments/basecnt.tsv.gz.old" "${working}/samples/${new}/${batchname}/alignments/basecnt.tsv.gz"
+	rm "${working}/samples/${new}/${batchname}/alignments/basecnt.tsv.gz.old"
+
+	mv "${working}/samples/${new}/${batchname}/alignments/coverage.tsv.gz"{,.old}
+	zcat "${working}/samples/${new}/${batchname}/alignments/coverage.tsv.gz.old" | sed "1s/${longold}/${longnew}/g" | gzip >"${working}/samples/${new}/${batchname}/alignments/coverage.tsv.gz"
+	touch --reference="${working}/samples/${new}/${batchname}/alignments/coverage.tsv.gz.old" "${working}/samples/${new}/${batchname}/alignments/coverage.tsv.gz"
+	rm "${working}/samples/${new}/${batchname}/alignments/coverage.tsv.gz.old"
+
+	sed -si "1s/${longold}/${longnew}/g" "${working}/samples/${new}/${batchname}/alignments/REF_aln_stats.yaml" "${working}/samples/${new}/${batchname}/references/"*.fasta
+	sed -i "s@${old}([-/])${batchname}@${new}\{1}${batchname}@g;s/^${longold:0:6}/${longnew:0:6}/g" "${working}/samples/${new}/${batchname}/references/"*.matcher
+	sed -i "s/${longold}/${longnew}/g" "${working}/samples/${new}/${batchname}/references/frameshift_deletions_check.tsv"
+
+	touch --reference="${working}/samples/${old}" "${working}/samples/${new}"
+	rmdir "${working}/samples/${old}"
+done < "${patchfile}"
+
+# patch sample tsv list
+mv "${sampleset}/samples.${batchname}.tsv"{,.old}
+while read old batch len proto; do
+	new="${old}"
+	if [[ -z ${map[$old]} ]]; then
+		oops "tsv $new not in patch list"
+	else
+		new="${map[$old]}"
+	fi
+	printf "%s\t%s\t%u\t%s\n" "${new}" "${batch}" "${len}" "${proto}"
+done < "${sampleset}/samples.${batchname}.tsv.old" > "${sampleset}/samples.${batchname}.tsv"
+#rm "${sampleset}/samples.${batchname}.tsv.old"
+
+# patch projects tsv list
+mv "${sampleset}/projects.${batchname}.tsv"{,.old}
+while read old project order folder plate; do
+	new="${old}"
+	if [[ -z ${map[$old]} ]]; then
+		oops "tsv $new not in patch list"
+	else
+		new="${map[$old]}"
+	fi
+	printf "%s\t%s\t%s\t%s\t%s\n" "${new}" "${project}" "${order}" "${folder}" "${plate}"
+done < "${sampleset}/projects.${batchname}.tsv.old" > "${sampleset}/projects.${batchname}.tsv"
+#rm "${sampleset}/projects.${batchname}.tsv.old"
