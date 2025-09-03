@@ -2,7 +2,7 @@
 #SBATCH --job-name="covvfit-LOLLIPOP"
 #SBATCH --mem-per-cpu=16384
 #SBATCH --oversubscribe
-#SBATCH --time=5:00:00
+#SBATCH --time=0:30:00
 #SBATCH --output=/cluster/project/pangolin/cowwid/covvfit/analysis/lollipop/logs/%x_%j.out   # STDOUT
 #SBATCH --error=/cluster/project/pangolin/cowwid/covvfit/analysis/lollipop/logs/%x_%j.err    # STDERR
 
