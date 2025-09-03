@@ -1,0 +1,12 @@
+name: covvfit_lollipop
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - pip
+  - pip:                   
+    - covvfit
+    - lollipop

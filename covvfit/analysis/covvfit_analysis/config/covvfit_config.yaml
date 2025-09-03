@@ -1,0 +1,20 @@
+variants:
+  - KP.2
+  - KP.3
+  - XEC
+  - LP.8
+  - NB.1.8.1
+  - XFG
+plot:
+  dimensions:
+    right: 1.2
+  time_spacing: 3
+  variant_colors:
+    JN.1: '#00E9FF' 
+    KP.2: '#7A5B58' 
+    KP.3: '#3A38F3'
+    XEC: '#6C3072'  
+    LP.8: '#379E33'
+    NB.1.8.1: '#BDC94D'  
+    XFG: '#9E7A29'  
+    undetermined: '#969696'

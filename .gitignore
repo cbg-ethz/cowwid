@@ -38,3 +38,8 @@ vpipe_run_config/slurm_email_recipients
 
 #git repo
 git/
+
+#log files
+covvfit/analysis/lollipop/logs
+covvfit/analysis/covvfit_analysis/logs
+
