@@ -8,6 +8,8 @@ for_communication/output/
 
 for_communication/resources/
 
+covvfit/analysis/lollipop/results
+covvfit/analysis/covvfit_analysis/results
 
 # Temporary or backup files
 *.log
@@ -29,6 +31,10 @@ __pycache__/
 # Conda environments or virtualenvs
 .env/
 .venv/
+covvfit/envs/covvfit_lollipop
 
 # ignore all sensitive data
 vpipe_run_config/slurm_email_recipients
+
+#git repo
+git/
