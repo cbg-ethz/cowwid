@@ -14,3 +14,14 @@ Thus, also the Lollipop installation should be **removed** once covvit is integr
 1. regular processing incl. lollipop run --> this provides the updated files (e.g. tallymut.tsv) to run the **second** lollipop here without smoothing
 2. rerun lollipop with: `/cluster/project/pangolin/cowwid/covvfit/analysis/lollipop/scripts/run_covvfit_lollipop.sh`
 3. run covvfit with: `/cluster/project/pangolin/cowwid/covvfit/analysis/covvfit_analysis/scripts/run_covvfit.sh`
+
+# running the code
+```Bash
+cd /cluster/project/pangolin/cowwid/covvfit/analysis/lollipop/scripts
+sbatch /run_covvfit_lollipop.sbatch
+```
+
+```Bash
+cd /cluster/project/pangolin/cowwid/covvfit/analysis/covvfit_analysis/scripts
+./run_covvfit.sh
+```
