@@ -3,7 +3,7 @@ set -euo pipefail
 
 # === Logging ===
 log_date=$(date +%Y-%m-%d_%H-%M-%S)
-log_dir="/cluster/project/pangolin/cowwid/covvfit/analysis/covvfit_analysis/logs"
+log_dir="/cluster/project/pangolin/resources/cowwid/covvfit/analysis/covvfit_analysis/logs"
 mkdir -p "$log_dir"
 log_file="$log_dir/covvfit_run_$log_date.log"
 
@@ -21,13 +21,13 @@ log "==== Starting covvfit inference run ===="
 
 # === Environment Setup ===
 log "Activating conda environment..."
-eval "$(/cluster/project/pangolin/test_automation/miniconda3/bin/conda shell.bash hook)"
-conda activate /cluster/project/pangolin/cowwid/covvfit/envs/covvfit_lollipop
+eval "$(/cluster/project/pangolin/resources/miniconda3/bin/conda shell.bash hook)"
+conda activate covvfit_lollipop
 
 # === Define Paths ===
-input_path="/cluster/project/pangolin/cowwid/covvfit/analysis/lollipop/results"
-output_path="/cluster/project/pangolin/cowwid/covvfit/analysis/covvfit_analysis/results/covvfit_results_$(date +%Y-%m-%d)"
-config_path="/cluster/project/pangolin/cowwid/covvfit/analysis/covvfit_analysis/config"
+input_path="/cluster/project/pangolin/resources/cowwid/covvfit/analysis/lollipop/results"
+output_path="/cluster/project/pangolin/resources/cowwid/covvfit/analysis/covvfit_analysis/results/covvfit_results_$(date +%Y-%m-%d)"
+config_path="/cluster/project/pangolin/resources/cowwid/covvfit/analysis/covvfit_analysis/config"
 
 # === Run Inference ===
 log "Running covvfit inference..."

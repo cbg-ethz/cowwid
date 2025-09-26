@@ -30,7 +30,7 @@ from adjustText import adjust_text
 
 ################################ Globals ################################
 # Load YAML config
-with open("/cluster/project/pangolin/cowwid/for_communication/config/config.yaml", "r") as f:
+with open("/cluster/project/pangolin/resources/cowwid/for_communication/config/config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 # Access variables

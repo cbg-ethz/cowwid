@@ -3,21 +3,21 @@
 #SBATCH --mem-per-cpu=16384
 #SBATCH --oversubscribe
 #SBATCH --time=0:30:00
-#SBATCH --output=/cluster/project/pangolin/cowwid/covvfit/analysis/lollipop/logs/%x_%j.out   # STDOUT
-#SBATCH --error=/cluster/project/pangolin/cowwid/covvfit/analysis/lollipop/logs/%x_%j.err    # STDERR
+#SBATCH --output=/cluster/project/pangolin/resources/cowwid/covvfit/analysis/lollipop/logs/%x_%j.out   # STDOUT
+#SBATCH --error=/cluster/project/pangolin/resources/cowwid/covvfit/analysis/lollipop/logs/%x_%j.err    # STDERR
 
 
 set -euo pipefail
 
-eval "$(/cluster/project/pangolin/test_automation/miniconda3/bin/conda shell.bash hook)"
+eval "$(/cluster/project/pangolin/resources/miniconda3/bin/conda shell.bash hook)"
 
-conda activate /cluster/project/pangolin/cowwid/covvfit/envs/covvfit_lollipop
+conda activate covvfit_lollipop
 
-ldata="/cluster/project/pangolin/work-vp-test"
-config_path="/cluster/project/pangolin/cowwid/covvfit/analysis/lollipop/config"
-output_path="/cluster/project/pangolin/cowwid/covvfit/analysis/lollipop/results"
+ldata="/cluster/project/pangolin/processes/sars_cov_2/lollipop"
+config_path="/cluster/project/pangolin/resources/cowwid/covvfit/analysis/lollipop/config"
+output_path="/cluster/project/pangolin/resources/cowwid/covvfit/analysis/lollipop/results"
 
-zstd -d $ldata/variants/tallymut.tsv.zst 
+zstd -d -f $ldata/variants/tallymut.tsv.zst 
 
 lollipop deconvolute $ldata/variants/tallymut.tsv \
     -o $output_path/deconvolved.csv \

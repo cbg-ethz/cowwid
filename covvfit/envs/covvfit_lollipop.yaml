@@ -7,6 +7,6 @@ dependencies:
   - numpy
   - pandas
   - pip
+  - lollipop
   - pip:                   
     - covvfit
-    - lollipop
