@@ -50,6 +50,7 @@ upload_wisedb=config["upload_wisedb"]
 upload_polybox=config["upload_polybox"]
 
 ################################  Upload to Cov-Spectrum ################################
+print("Response Cov-Spectrum:")
 #IMPROVE: This is hardcoded and can be moved to the config as an improvement
 if upload_covspectrum == True:
 
@@ -147,13 +148,14 @@ if upload_wisedb == True :
 
     result = subprocess.run(curl_command, capture_output=True, text=True)
 
-    print("Response:")
+    print("Response wiseDB:")
     print(result.stdout)
     if result.stderr:
         print(result.stderr)
 
 
 ################################ Upload to FOPH/BAG's Polybox ################################
+print("Response Polybox:")
 if upload_polybox == True:
         
     polybox_url = config["FOPH_BAG_polybox_url"]
