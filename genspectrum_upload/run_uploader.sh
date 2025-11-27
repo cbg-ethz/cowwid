@@ -2,20 +2,20 @@
 set -euo pipefail
 
 eval "$(/cluster/project/pangolin/test_automation/miniconda3/bin/conda shell.bash hook)"
-conda activate /cluster/project/pangolin/genspectrum_upload/genspectrum_upload
+conda activate /cluster/project/pangolin/processes/genspectrum_upload/genspectrum_upload
 
 #setup path
-base_path="/cluster/project/pangolin/genspectrum_upload"
+base_path="/cluster/project/pangolin/processes/genspectrum_upload"
 config_file="${base_path}/WISE-mut-freq-data-uploader/config.yaml"
 #config_file_test="${base_path}/WISE-mut-freq-data-uploader/config_test_upload.yaml"
 
-RSVA_folder="/cluster/project/pangolin/rsv_pipeline/RSVA/working/MutationFrequencies"
-RSVB_folder="/cluster/project/pangolin/rsv_pipeline/RSVB/working/MutationFrequencies"
+RSVA_folder="/cluster/project/pangolin/processes/rsv/RSVA/working/MutationFrequencies"
+RSVB_folder="/cluster/project/pangolin/processes/rsv/RSVB/working/MutationFrequencies"
 
-IA_H1_folder="/cluster/project/pangolin/influenza_pipeline/IA_H1/working/MutationFrequencies"
-IA_H3_folder="/cluster/project/pangolin/influenza_pipeline/IA_H3/working/MutationFrequencies"
-IA_N1_folder="/cluster/project/pangolin/influenza_pipeline/IA_N1/working/MutationFrequencies"
-IA_N2_folder="/cluster/project/pangolin/influenza_pipeline/IA_N2/working/MutationFrequencies"
+IA_H1_folder="/cluster/project/pangolin/processes/influenza/IA_H1/working/mutation_frequencies"
+IA_H3_folder="/cluster/project/pangolin/processes/influenza/IA_H3/working/mutation_frequencies"
+IA_N1_folder="/cluster/project/pangolin/processes/influenza/IA_N1/working/mutation_frequencies"
+IA_N2_folder="/cluster/project/pangolin/processes/influenza/IA_N2/working/mutation_frequencies"
 
 #TODO: check if this filtering is still needed
 #preprocess RSV if necessary (see repo docs): checked latest file, should not be neede anymore
