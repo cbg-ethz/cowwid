@@ -1,0 +1,15 @@
+name: iva_heatmap
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - r-base
+  - r-data.table
+  - r-tidyverse
+  - r-ggplot2
+  - r-gridextra
+  - bioconductor-biostrings
+  - r-stringr
+  - r-ggforce
+  - r-optparse
