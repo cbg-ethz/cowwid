@@ -2,8 +2,11 @@ name: rsv_heatmap
 channels:
   - conda-forge
   - defaults
+  - bioconda
 dependencies:
   - python=3.10
   - pandas
   - matplotlib
   - numpy
+  - seaborn
+  - requests # Added the missing external package

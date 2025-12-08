@@ -9,6 +9,8 @@ mut_file_A="/cluster/project/pangolin/processes/rsv/RSVA/working/MutationFrequen
 mut_file_B="/cluster/project/pangolin/processes/rsv/RSVB/working/MutationFrequencies/${current_batch}_EPI_ISL_1653999_Mutations_Dashboard.tsv"
 out_path="/cluster/project/pangolin/resources/cowwid/rsv_iva_heatmaps/results_rsv"
 
+mkdir -p ${out_path}
+
 #RSVA
 echo "Processing RSVA"
 python /cluster/project/pangolin/processes/rsv/rsv_downstream_analysis/RSV-wastewater-V-pipe/regular_monitoring_2024_2025/regular_monitoring_rsva_a_annotated.py \
