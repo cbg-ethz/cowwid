@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-eval "$(/cluster/project/pangolin/test_automation/miniconda3/bin/conda shell.bash hook)"
+eval "$(/cluster/project/pangolin/resources/miniconda3/bin/conda shell.bash hook)"
 conda activate /cluster/project/pangolin/processes/genspectrum_upload/genspectrum_upload
 
 #setup path
@@ -82,9 +82,9 @@ for data_dir in "${folders[@]}"; do
     fi
 
     #run the upload
-    echo "python ${base_path}/WISE-mut-freq-data-uploader/scripts/upload_data.py --data-folder ${dedup_data_dir} --config-file ${config} --organism ${organism}"
+    echo "python ${base_path}/WISE-mut-freq-data-uploader/scripts/upload_data.py --data-folder ${dedup_data_dir} --config-file ${config_file} --organism ${organism}"
     #   UNCOMMENT THIS ONCE UPLOAD WILL START
-    #python ${base_path}/WISE-mut-freq-data-uploader/scripts/upload_data.py --data-folder ${dedup_data_dir} --config-file ${config} --organism ${organism}
+    python ${base_path}/WISE-mut-freq-data-uploader/scripts/upload_data.py --data-folder ${dedup_data_dir} --config-file ${config_file} --organism ${organism}
 
 done
 

@@ -5,7 +5,7 @@
 - The empty batches still produce mutation frequency files in /cluster/project/pangolin/*/*/working/MutationFrequencies; this has to be adapted to avoid uploading whatever is there from the untracked time.
    - clean-up of irrelevant files
 - In /cluster/project/pangolin/genspectrum_upload/run_uploader.sh the Python command to upload is commented out.
-- TODO: add sun_uploader.sh to cowwid
+
 
 
 # Overview
