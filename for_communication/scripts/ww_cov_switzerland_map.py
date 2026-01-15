@@ -20,7 +20,7 @@ import geopandas as gpd
 import seaborn as sns
 import yaml
 import os
-
+import argparse
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
@@ -29,8 +29,18 @@ import matplotlib.patheffects as PathEffects
 from adjustText import adjust_text
 
 ################################ Globals ################################
-# Load YAML config
-with open("/cluster/project/pangolin/resources/cowwid/for_communication/config/config.yaml", "r") as f:
+# Set up argument parser
+parser = argparse.ArgumentParser(description="Process YAML config file.")
+parser.add_argument(
+    "config_file", 
+    type=str, 
+    help="Path to the YAML configuration file"
+)
+args = parser.parse_args()
+
+# Load YAML config from the input argument
+print(f"Loading configuration from: {args.config_file}")
+with open(args.config_file, "r") as f:
     config = yaml.safe_load(f)
 
 # Access variables

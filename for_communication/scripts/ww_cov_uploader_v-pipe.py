@@ -30,13 +30,24 @@ import os
 import sys
 import netrc
 import psycopg2
+import argparse
 from copy import deepcopy
 
 
 ################################ Globals ################################
 
-# Load YAML config
-with open("/cluster/project/pangolin/resources/cowwid/for_communication/config/config.yaml", "r") as f:
+# Set up argument parser
+parser = argparse.ArgumentParser(description="Process YAML config file.")
+parser.add_argument(
+    "config_file", 
+    type=str, 
+    help="Path to the YAML configuration file"
+)
+args = parser.parse_args()
+
+# Load YAML config from the input argument
+print(f"Loading configuration from: {args.config_file}")
+with open(args.config_file, "r") as f:
     config = yaml.safe_load(f)
 
 # Access variables

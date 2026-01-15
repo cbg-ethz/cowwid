@@ -4,7 +4,7 @@ eval "$(/cluster/project/pangolin/resources/miniconda3/condabin/conda shell.bash
 
 conda activate communication_env
 
-python /cluster/project/pangolin/resources/cowwid/for_communication/scripts/ww_cov_curves_v-pipe.py > >(tee ww_cov_curves_v-pipe.log) 2>&1
+python /cluster/project/pangolin/resources/cowwid/for_communication/scripts/ww_cov_curves_v-pipe.py "/cluster/project/pangolin/resources/cowwid/for_communication/config/config.yaml" > >(tee ww_cov_curves_v-pipe.log) 2>&1
 #add here the merge_json.py script -->output of this file should be uploaded to wiseDB
 
 #'''
