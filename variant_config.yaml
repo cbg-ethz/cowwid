@@ -44,6 +44,7 @@ variants_pangolin:
   "lp.8": "LP.8"
   "nb.1.8.1": "NB.1.8.1"
   "xfg": "XFG"
+  "ba32": "BA.3.2"
 
 #variants_not_reported:
  # - "BA.2.75.2"
@@ -56,6 +57,7 @@ variants_pangolin:
  # - "mu"
  # - "d614g"
 
+#TODO: Dynamically change the date to be always 6 months prior
 start_date: "2020-12-08"
 
 to_drop:
@@ -77,7 +79,7 @@ locations_list:
   #- "Lausanne (VD)"
   #  - "Kanton Zürich"
   #- "Bern (BE)"
-  #- "Luzern (LU)"
+  # - "Luzern (LU)"
   #- "Solothurn (SO)"
   #- "Neuchâtel (NE)"
   #- "Schwyz (SZ)"
