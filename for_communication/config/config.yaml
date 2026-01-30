@@ -2,8 +2,9 @@
 
 ################################  Generate Curves  ################################
 # Input
-datadir: "/cluster/project/pangolin/processes/sars_cov_2/lollipop/variants"
-jsonfile_smooth: "/cluster/project/pangolin/processes/sars_cov_2/lollipop/variants/deconvoluted_upload.json"
+#jsonfile_smooth: "/cluster/project/pangolin/processes/sars_cov_2/lollipop/variants/deconvoluted_upload.json"
+#use stitched curve for processing
+jsonfile_smooth: "/cluster/project/pangolin/resources/cowwid/json_parser_for_variant_curve_stitching/results/stitched_curve.json"
 
 # Output
 plots_dir: "/cluster/project/pangolin/resources/cowwid/for_communication/plots"
