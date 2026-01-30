@@ -48,7 +48,6 @@ with open(args.config_file, "r") as f:
     config = yaml.safe_load(f)
 
 # Access variables
-datadir = config["datadir"]
 jsonfile_smooth = config["jsonfile_smooth"]
 plots_dir = config["plots_dir"]
 color_map = config["color_map"]
@@ -194,7 +193,7 @@ for i, loc in enumerate(tqdm(locations, desc="Locations", position=0, leave=Fals
         )
         if tt_df.size == 0:
             continue
-        tt_df = tt_df.iloc[-15:]
+        tt_df = tt_df.iloc[-40:] #That means: plot only the last 15 rows (last 15 dates) for each (location, variant).
         g = sns.lineplot(
             x=tt_df["date"],
             y=tt_df["proportion"],
