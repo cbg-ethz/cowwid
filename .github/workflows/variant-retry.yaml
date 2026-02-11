@@ -1,0 +1,119 @@
+name: Retry Variant Creation
+on:
+  schedule:
+    # Run daily at 18:00 UTC to retry failed variant creations
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+jobs:
+  retry-failed-variants:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests PyYAML
+
+      - name: Find and retry failed variant creations
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python << 'EOF'
+          import os
+          import requests
+          from datetime import datetime, timedelta
+
+          GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
+          REPO = os.environ['GITHUB_REPOSITORY']
+          MAX_AGE_DAYS = 7  # Maximum age of issues to consider (7 days - CovSpectrum can take up to 7 days to update with new variant data)
+
+          def get_issues_needing_retry():
+              """Find open issues with variant-creation-needed label that are not too old"""
+              url = f"https://api.github.com/repos/{REPO}/issues"
+              headers = {
+                  'Authorization': f'token {GITHUB_TOKEN}',
+                  'Accept': 'application/vnd.github.v3+json'
+              }
+              params = {
+                  'labels': 'variant-creation-needed',
+                  'state': 'open',
+                  'sort': 'created',
+                  'direction': 'desc'
+              }
+              
+              try:
+                  response = requests.get(url, headers=headers, params=params)
+                  response.raise_for_status()
+                  issues = response.json()
+                  
+                  # Filter issues that are not too old
+                  cutoff_date = datetime.now() - timedelta(days=MAX_AGE_DAYS)
+                  recent_issues = []
+                  
+                  for issue in issues:
+                      created_at = datetime.fromisoformat(issue['created_at'].replace('Z', '+00:00'))
+                      if created_at > cutoff_date:
+                          recent_issues.append(issue)
+                      else:
+                          print(f"⏰ Issue #{issue['number']} is too old ({created_at}), skipping")
+                  
+                  return recent_issues
+              except Exception as e:
+                  print(f"❌ Error getting issues: {e}")
+                  return []
+
+          def trigger_variant_creation(issue_number):
+              """Trigger the variant creation workflow for a specific issue"""
+              url = f"https://api.github.com/repos/{REPO}/actions/workflows/variant-creator.yaml/dispatches"
+              headers = {
+                  'Authorization': f'token {GITHUB_TOKEN}',
+                  'Accept': 'application/vnd.github.v3+json'
+              }
+              data = {
+                  'ref': 'master',  # Use master branch when this is merged
+                  'inputs': {
+                      'issue_number': str(issue_number)
+                  }
+              }
+              
+              try:
+                  response = requests.post(url, headers=headers, json=data)
+                  response.raise_for_status()
+                  print(f"✅ Triggered variant creation for issue #{issue_number}")
+                  return True
+              except Exception as e:
+                  print(f"❌ Error triggering workflow for issue #{issue_number}: {e}")
+                  return False
+
+          # Main execution
+          print("🔄 Checking for issues that need variant creation retry...")
+          
+          issues = get_issues_needing_retry()
+          print(f"📋 Found {len(issues)} recent issues with variant-creation-needed label")
+          
+          if not issues:
+              print("✅ No issues need retry at this time")
+              exit(0)
+          
+          success_count = 0
+          for issue in issues:
+              issue_number = issue['number']
+              print(f"🔄 Triggering retry for issue #{issue_number}: {issue['title']}")
+              
+              if trigger_variant_creation(issue_number):
+                  success_count += 1
+          
+          print(f"📊 Triggered retry for {success_count}/{len(issues)} issues")
+          
+          EOF
