@@ -30,12 +30,13 @@ output_path="/cluster/project/pangolin/resources/cowwid/covvfit/analysis/covvfit
 config_path="/cluster/project/pangolin/resources/cowwid/covvfit/analysis/covvfit_analysis/config"
 
 # === Run Inference ===
+# changed to half year display :--max-days 365
 log "Running covvfit inference..."
 covvfit infer \
     -i "$input_path/deconvolved.csv" \
     -o "$output_path" \
     -c "$config_path/covvfit_config.yaml" \
-    --max-days 365 \
+    --max-days 180 \
     --horizon 90 | tee -a "$log_file"
 
 # === Cleanup ===
