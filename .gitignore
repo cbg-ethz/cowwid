@@ -44,3 +44,6 @@ covvfit/analysis/lollipop/logs
 covvfit/analysis/covvfit_analysis/logs
 
 /cowwid/rsv_iva_heatmaps/results
+
+/rsv_iva_heatmaps/scripts/depr_rsv_heatmap.py
+json_parser_for_variant_curve_stitching/scripts/dev_script.py
