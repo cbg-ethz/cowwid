@@ -193,7 +193,7 @@ for i, loc in enumerate(tqdm(locations, desc="Locations", position=0, leave=Fals
         )
         if tt_df.size == 0:
             continue
-        tt_df = tt_df.iloc[-40:] #That means: plot only the last 15 rows (last 15 dates) for each (location, variant).
+        tt_df = tt_df.iloc[-80:] #That means: plot only the last 15 rows (last 15 dates) for each (location, variant).
         g = sns.lineplot(
             x=tt_df["date"],
             y=tt_df["proportion"],
