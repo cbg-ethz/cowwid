@@ -145,14 +145,14 @@ for (file_path in input_files) {
   if (!is.null(plots_standard)) {
     # Save standard plots
     ggsave(filename = file.path(output_dir, paste0(gene_name, "_AA_Mutation_Freq.pdf")), 
-           plot = plots_standard$hm_aa, width = 10, height = 7)
+           plot = plots_standard$hm_aa, width = 15, height = 14)
     ggsave(filename = file.path(output_dir, paste0(gene_name, "_Nuc_Mutation_Freq.pdf")), 
-           plot = plots_standard$hm_nuc, width = 10, height = 7)
+           plot = plots_standard$hm_nuc, width = 15, height = 14)
     ggsave(filename = file.path(output_dir, paste0(gene_name, "_Coverage.pdf")), 
-           plot = plots_standard$hm_cov, width = 10, height = 7)
+           plot = plots_standard$hm_cov, width = 15, height = 14)
     # Save combined plot
     ggsave(filename = file.path(output_dir, paste0(gene_name, "_Combined.pdf")), 
-           plot = plots_standard$p_combined, width = 10, height = 10, device = "pdf")
+           plot = plots_standard$p_combined, width = 15, height = 30, device = "pdf")
   }
 
   # 2. Resistance Plots (Only if resistance mutations are defined and the gene is N1)
@@ -163,9 +163,9 @@ for (file_path in input_files) {
     if (!is.null(plots_res)) {
       # Save resistance plots
       ggsave(filename = file.path(output_dir, "N1_Resistance_AA_Mutation_Freq.pdf"), 
-             plot = plots_res$hm_aa, width = 10, height = 7)
+             plot = plots_res$hm_aa, width = 15, height = 14)
       ggsave(filename = file.path(output_dir, "N1_Resistance_Coverage.pdf"), 
-             plot = plots_res$hm_cov, width = 10, height = 7)
+             plot = plots_res$hm_cov, width = 15, height = 14)
       
       # Save the detailed data table for detected resistance mutations
       fwrite(plots_res$det_res, file.path(output_dir, "N1_Detected_Resistance_Mutations.tsv"), sep = "\t")
