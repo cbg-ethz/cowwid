@@ -24,7 +24,7 @@ else
     echo "No previous stitched curve found! Exiting"
     exit 1
 fi
-# the output of lollipop:
+# the output of lollipop: If dates are in old and new curve the new results will be used in the merging process
 new_only_few_month_curve="/cluster/project/pangolin/processes/sars_cov_2/lollipop/variants/deconvoluted_upload.json"
 
 python "$analysis_dir/scripts/enhanced_nested_json_stitching.py" \
