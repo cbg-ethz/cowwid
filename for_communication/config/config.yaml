@@ -79,7 +79,7 @@ upload_polybox: True
 
 WiseDB_output_file_gz: '/cluster/project/pangolin/resources/cowwid/for_communication/output/ww_update_data_wisebd.json.gz'
 WiseDB_checksum_file: '/cluster/project/pangolin/resources/cowwid/for_communication/output/ww_update_data_wisebd.json.gz.sha256'
-WiseDB_url: "https://wisedb.ethz.ch/api/fileuploadbatch/sars_variants/"
+WiseDB_url: "https://wisedb.ethz.ch/api/private/fileuploadbatch/sars_variants/"
 
 ################################  Upload to Polybox ################################
 FOPH_BAG_polybox_url: "https://bs-pangolin@polybox.ethz.ch/remote.php/dav/files/bs-pangolin/Shared/BAG-COWWID19/"
