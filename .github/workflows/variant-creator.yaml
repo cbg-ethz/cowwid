@@ -1,0 +1,510 @@
+name: Create Variant Definition
+on:
+  issues:
+    types: [opened, labeled]
+  push:  # TEMPORARY: Remove this trigger after testing
+    branches:
+      - feat/nextclade_monitor
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to process'
+        required: true
+        type: string
+
+jobs:
+  create-variant:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.labels.*.name, 'variant-creation-needed') || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0  # Fetch full history for proper branching
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests PyYAML
+
+      - name: Extract issue information and create variant definition
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MANUAL_ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number || '' }}
+        run: |
+          python << 'EOF'
+          import os
+          import requests
+          import yaml
+          import json
+          import time
+          import re
+          from datetime import datetime, timedelta
+
+          # Configuration
+          GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
+          REPO = os.environ['GITHUB_REPOSITORY']
+          MANUAL_ISSUE_NUMBER = os.environ.get('MANUAL_ISSUE_NUMBER', '')
+          COVSPECTRUM_API = "https://lapis.cov-spectrum.org"
+          MIN_PROPORTION = 0.8
+          MIN_COUNT = 15
+
+          def get_issues_to_process():
+              """Get all open issues with variant-creation-needed label or specific manual issue"""
+              if MANUAL_ISSUE_NUMBER:
+                  # Manual trigger - process specific issue
+                  print(f"🎯 Processing manually specified issue #{MANUAL_ISSUE_NUMBER}")
+                  return [MANUAL_ISSUE_NUMBER]
+              
+              # Automatic trigger - find all open issues with the label
+              url = f"https://api.github.com/repos/{REPO}/issues"
+              headers = {
+                  'Authorization': f'token {GITHUB_TOKEN}',
+                  'Accept': 'application/vnd.github.v3+json'
+              }
+              params = {
+                  'labels': 'variant-creation-needed',
+                  'state': 'open',
+                  'sort': 'created',
+                  'direction': 'desc'
+              }
+              
+              try:
+                  response = requests.get(url, headers=headers, params=params)
+                  response.raise_for_status()
+                  issues = response.json()
+                  issue_numbers = [str(issue['number']) for issue in issues]
+                  print(f"🔍 Found {len(issue_numbers)} open issues with variant-creation-needed label: {issue_numbers}")
+                  return issue_numbers
+              except Exception as e:
+                  print(f"❌ Error getting issues: {e}")
+                  return []
+
+          def comment_on_issue(message, issue_number):
+              """Add a comment to the GitHub issue"""
+              url = f"https://api.github.com/repos/{REPO}/issues/{issue_number}/comments"
+              headers = {
+                  'Authorization': f'token {GITHUB_TOKEN}',
+                  'Accept': 'application/vnd.github.v3+json'
+              }
+              data = {'body': message}
+              try:
+                  response = requests.post(url, headers=headers, json=data)
+                  response.raise_for_status()
+                  print(f"✅ Added comment to issue #{issue_number}")
+              except Exception as e:
+                  print(f"❌ Error commenting on issue #{issue_number}: {e}")
+
+          def get_issue_details(issue_number):
+              """Get issue title and body to extract clade information"""
+              url = f"https://api.github.com/repos/{REPO}/issues/{issue_number}"
+              headers = {
+                  'Authorization': f'token {GITHUB_TOKEN}',
+                  'Accept': 'application/vnd.github.v3+json'
+              }
+              try:
+                  response = requests.get(url, headers=headers)
+                  response.raise_for_status()
+                  issue_data = response.json()
+                  
+                  # Check if issue is still open
+                  if issue_data.get('state') != 'open':
+                      print(f"⚠️ Issue #{issue_number} is {issue_data.get('state')}, skipping processing")
+                      return None
+                  
+                  return issue_data
+              except Exception as e:
+                  print(f"❌ Error getting issue #{issue_number} details: {e}")
+                  return None
+
+          def extract_clades_from_issue(issue_data):
+              """Extract new clades from issue title and body"""
+              if not issue_data:
+                  return []
+              
+              # Look for display names in issue body (format: "- **25C (XFG)** (emerged: ...)")
+              body = issue_data.get('body', '')
+              title = issue_data.get('title', '')
+              
+              # Pattern to match: - **DISPLAY_NAME** (emerged: ...)
+              pattern = r'- \*\*([^*]+)\*\* \(emerged:'
+              matches = re.findall(pattern, body)
+              
+              clades = []
+              for match in matches:
+                  if '(' in match and ')' in match:
+                      # Extract display name from "25C (XFG)" format
+                      display_name = match.split('(')[1].split(')')[0].strip()
+                      nextstrain_clade = match.split('(')[0].strip()
+                      clades.append({
+                          'nextstrain': nextstrain_clade,
+                          'display_name': display_name
+                      })
+                  else:
+                      # Fallback: treat the whole match as display name
+                      clades.append({
+                          'nextstrain': match,
+                          'display_name': match
+                      })
+              
+              print(f"🔍 Extracted clades from issue: {clades}")
+              return clades
+
+          def query_covspectrum(variant_query):
+              """Query CovSpectrum API for nucleotide mutations"""
+              url = f"{COVSPECTRUM_API}/open/v2/sample/nucleotideMutations"
+              params = {
+                  'variantQuery': f"{variant_query}*",
+                  'minProportion': MIN_PROPORTION,
+                  'limit': 1000,
+                  'downloadAsFile': 'false'
+              }
+              
+              try:
+                  print(f"🔍 Querying CovSpectrum for variant: {variant_query}*")
+                  response = requests.get(url, params=params)
+                  response.raise_for_status()
+                  data = response.json()
+                  mutations = data.get('data', [])
+                  
+                  # Filter by minCount locally since API doesn't support it
+                  filtered_mutations = [m for m in mutations if m.get('count', 0) >= MIN_COUNT]
+                  
+                  print(f"📊 Found {len(mutations)} total mutations, {len(filtered_mutations)} after count filter (>= {MIN_COUNT})")
+                  return filtered_mutations
+                  return mutations
+              except Exception as e:
+                  print(f"❌ Error querying CovSpectrum for {variant_query}: {e}")
+                  return None
+
+          def create_variant_file(clade_info, mutations):
+              """Create variant YAML file"""
+              nextstrain_clade = clade_info['nextstrain']
+              display_name = clade_info['display_name']
+              
+              # Create filename: lowercase display name with _bot suffix
+              filename = f"{display_name.lower()}_mutations_full_bot.yaml"
+              filepath = f"voc/{filename}"
+              
+              # Build variant structure
+              variant_data = {
+                  'variant': {
+                      'short': '',
+                      'pangolin': display_name,
+                      'nextstrain': nextstrain_clade
+                  },
+                  'mut': {}
+              }
+              
+              # Add mutations sorted by position
+              for mutation in mutations:
+                  position = mutation.get('position')
+                  mut_from = mutation.get('mutationFrom')
+                  mut_to = mutation.get('mutationTo')
+                  
+                  if position and mut_from is not None and mut_to is not None:
+                      if mut_to == '-':
+                          # Deletion
+                          mut_string = '-' * len(mut_from) if len(mut_from) > 1 else '-'
+                      elif mut_from == '-':
+                          # Insertion
+                          mut_string = f"->{mut_to}"
+                      else:
+                          # Substitution
+                          mut_string = f"{mut_from}>{mut_to}"
+                      
+                      variant_data['mut'][position] = mut_string
+              
+              # Sort mutations by position
+              sorted_mutations = dict(sorted(variant_data['mut'].items(), key=lambda x: int(x[0])))
+              variant_data['mut'] = sorted_mutations
+              
+              return filepath, variant_data
+
+          def check_existing_pr(branch_name):
+              """Check if PR already exists for this branch"""
+              url = f"https://api.github.com/repos/{REPO}/pulls"
+              headers = {
+                  'Authorization': f'token {GITHUB_TOKEN}',
+                  'Accept': 'application/vnd.github.v3+json'
+              }
+              params = {'head': f"{REPO.split('/')[0]}:{branch_name}", 'state': 'open'}
+              
+              try:
+                  response = requests.get(url, headers=headers, params=params)
+                  response.raise_for_status()
+                  prs = response.json()
+                  return len(prs) > 0, prs[0] if prs else None
+              except Exception as e:
+                  print(f"❌ Error checking existing PR: {e}")
+                  return False, None
+
+          def create_pr(branch_name, clade_info, filename, issue_number):
+              """Create pull request"""
+              url = f"https://api.github.com/repos/{REPO}/pulls"
+              headers = {
+                  'Authorization': f'token {GITHUB_TOKEN}',
+                  'Accept': 'application/vnd.github.v3+json'
+              }
+              
+              title = f"Add automated variant definition for {clade_info['display_name']} ({clade_info['nextstrain']})"
+              
+              # Build CovSpectrum URLs
+              display_name = clade_info['display_name']
+              covspectrum_explore_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={display_name}*&"
+              
+              body = f"# 🧬 Automated Variant Definition\n\n"
+              body += f"This PR adds the automated variant definition for **{clade_info['display_name']}** (Nextstrain clade {clade_info['nextstrain']}).\n\n"
+              body += "## Generated Files\n"
+              body += f"- `voc/{filename}` - Nucleotide mutations from CovSpectrum (automated)\n\n"
+              body += "## CovSpectrum Query Parameters\n"
+              body += f"- **Variant Query**: `{clade_info['display_name']}*`\n"
+              body += f"- **Min Proportion**: {MIN_PROPORTION}\n"
+              body += f"- **Min Count**: {MIN_COUNT}\n\n"
+              body += "## CovSpectrum Links\n"
+              body += f"- 🔍 [Explore variant data]({covspectrum_explore_url})\n"
+              body += f"- 📊 [View Swiss data](https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={display_name}*&)\n"
+              body += f"## Related Issue\n"
+              body += f"Closes #{issue_number}\n\n"
+              body += "---\n"
+              body += "*This PR was automatically created by the Variant Creator workflow.*\n"
+              
+              data = {
+                  'title': title,
+                  'head': branch_name,
+                  'base': 'master',
+                  'body': body,
+                  'assignees': ['gordonkoehn']
+              }
+              
+              try:
+                  response = requests.post(url, headers=headers, json=data)
+                  response.raise_for_status()
+                  pr_data = response.json()
+                  print(f"✅ Created PR #{pr_data['number']}: {title}")
+                  return pr_data
+              except Exception as e:
+                  print(f"❌ Error creating PR: {e}")
+                  return None
+
+          # Main execution
+          print(f"🚀 Starting variant creation workflow...")
+          
+          # Ensure we start from a clean master branch
+          os.system('git fetch origin master')
+          os.system('git checkout master')
+          os.system('git reset --hard origin/master')
+          print("✅ Reset to clean master branch")
+          
+          # Get issues to process
+          issue_numbers = get_issues_to_process()
+          if not issue_numbers:
+              print("❌ No issues found to process")
+              exit(0)
+          
+          print(f"📋 Processing {len(issue_numbers)} issue(s): {', '.join([f'#{num}' for num in issue_numbers])}")
+          
+          total_success_count = 0
+          total_processed_issues = 0
+          
+          for issue_number in issue_numbers:
+              print(f"\n{'='*60}")
+              print(f"🎯 Processing issue #{issue_number}")
+              print(f"{'='*60}")
+              
+              # Get issue details (must be open to process)
+              issue_data = get_issue_details(issue_number)
+              if not issue_data:
+                  print(f"❌ Could not retrieve issue #{issue_number} details or issue is not open")
+                  continue
+              
+              # Extract clades from issue
+              clades = extract_clades_from_issue(issue_data)
+              if not clades:
+                  comment_on_issue("❌ **Variant Creation Failed**: Could not extract clade information from issue. Please ensure the issue contains new clade information in the expected format.", issue_number)
+                  print(f"❌ No clades found in issue #{issue_number}")
+                  continue
+              
+              # Build initial comment with CovSpectrum links
+              clade_names = [c['display_name'] for c in clades]
+              start_comment = f"🔄 **Variant Creation Started**: Processing {len(clades)} clade(s): {', '.join(clade_names)}\n\n"
+              start_comment += "## CovSpectrum Links for Verification\n"
+              for clade_info in clades:
+                  display_name = clade_info['display_name']
+                  covspectrum_url = f"https://cov-spectrum.org/explore/Switzerland/AllSamples/Past6M/variants?nextcladePangoLineage={display_name}*&"
+                  start_comment += f"- **{display_name}**: [Check availability]({covspectrum_url})\n"
+              
+              comment_on_issue(start_comment, issue_number)
+              
+              success_count = 0
+              total_clades = len(clades)
+              
+              for clade_info in clades:
+                  try:
+                      display_name = clade_info['display_name']
+                      nextstrain_clade = clade_info['nextstrain']
+                      
+                      print(f"\n🔬 Processing {display_name} ({nextstrain_clade}) for issue #{issue_number}")
+                      
+                      # Create branch name
+                      branch_name = f"variant/{nextstrain_clade.lower()}-{display_name.lower()}"
+                      
+                      # Check if PR already exists
+                      pr_exists, existing_pr = check_existing_pr(branch_name)
+                      if pr_exists:
+                          comment_on_issue(f"ℹ️ **{display_name}**: PR already exists - {existing_pr['html_url']}", issue_number)
+                          print(f"⚠️ PR already exists for {display_name}")
+                          continue
+                      
+                      # Query CovSpectrum
+                      mutations = query_covspectrum(display_name)
+                      if mutations is None:
+                          comment_on_issue(f"❌ **{display_name}**: Failed to query CovSpectrum API. This might be a temporary issue - the workflow will retry daily at 18:00 UTC.", issue_number)
+                          print(f"❌ Failed to query CovSpectrum for {display_name}")
+                          continue
+                      
+                      if len(mutations) == 0:
+                          comment_on_issue(f"⚠️ **{display_name}**: No mutations found in CovSpectrum (variant might not be available yet). The workflow will retry daily at 18:00 UTC for up to 7 days.", issue_number)
+                          print(f"⚠️ No mutations found for {display_name}")
+                          continue
+                      
+                      # Create variant file
+                      filepath, variant_data = create_variant_file(clade_info, mutations)
+                      filename = os.path.basename(filepath)
+                      
+                      # Write file
+                      os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                      with open(filepath, 'w') as f:
+                          yaml.dump(variant_data, f, default_flow_style=False, sort_keys=False)
+                      
+                      print(f"✅ Created variant file: {filepath}")
+                      
+                      # Ensure we're on a clean master branch from remote
+                      os.system('git fetch origin master')
+                      os.system('git checkout master')
+                      os.system('git reset --hard origin/master')
+                      
+                      # Create branch and commit
+                      os.system(f'git config --local user.email "action@github.com"')
+                      os.system(f'git config --local user.name "GitHub Action"')
+                      os.system(f'git checkout -b {branch_name}')
+                      os.system(f'git add {filepath}')
+                      os.system(f'git commit -m "Add automated variant definition for {display_name} ({nextstrain_clade})"')
+                      
+                      # Force push to ensure clean branch (in case it exists from previous run)
+                      push_result = os.system(f'git push --force-with-lease origin {branch_name}')
+                      if push_result != 0:
+                          # If force-with-lease fails, try regular push
+                          os.system(f'git push origin {branch_name}')
+                      
+                      # Create PR
+                      pr_data = create_pr(branch_name, clade_info, filename, issue_number)
+                      if pr_data:
+                          # Success comment with notification
+                          success_msg = f"✅ **{display_name}**: Created variant definition with {len(mutations)} mutations - PR #{pr_data['number']} ({pr_data['html_url']})\n\n"
+                          success_msg += f"@gordonkoehn - please review the automated variant definition."
+                          comment_on_issue(success_msg, issue_number)
+                          success_count += 1
+                          total_success_count += 1
+                      else:
+                          comment_on_issue(f"❌ **{display_name}**: Created variant file but failed to create PR", issue_number)
+                      
+                      # Switch back to clean master for next variant
+                      os.system('git fetch origin master')
+                      os.system('git checkout master')
+                      os.system('git reset --hard origin/master')
+                      
+                  except Exception as e:
+                      error_msg = f"❌ **{clade_info.get('display_name', 'Unknown')}**: Unexpected error during processing: {str(e)}"
+                      comment_on_issue(error_msg, issue_number)
+                      print(f"❌ Error processing {clade_info}: {e}")
+                      # Switch back to clean master even on error
+                      os.system('git fetch origin master')
+                      os.system('git checkout master')
+                      os.system('git reset --hard origin/master')
+              
+              # Final summary for this issue
+              if success_count > 0:
+                  final_msg = f"🎉 **Variant Creation Complete**: Successfully processed {success_count}/{total_clades} clade(s)\n\n"
+                  final_msg += f"@gordonkoehn - {success_count} variant definition(s) ready for review."
+                  comment_on_issue(final_msg, issue_number)
+              else:
+                  retry_msg = f"⚠️ **Variant Creation Incomplete**: Could not process any clades successfully. The workflow will retry daily at 18:00 UTC for up to 7 days.\n\n"
+                  retry_msg += f"@gordonkoehn - this is normal when CovSpectrum hasn't updated with the new variant data yet."
+                  comment_on_issue(retry_msg, issue_number)
+              
+              print(f"📊 Issue #{issue_number} result: {success_count}/{total_clades} clades processed successfully")
+              total_processed_issues += 1
+          
+          print(f"\n{'='*60}")
+          print(f"🏁 WORKFLOW COMPLETE")
+          print(f"📊 Processed {total_processed_issues} issues")
+          print(f"🎉 Created {total_success_count} variant definitions successfully")
+          print(f"{'='*60}")
+          
+          EOF
+
+      - name: Setup retry mechanism
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python << 'EOF'
+          import os
+          import requests
+          from datetime import datetime, timedelta
+
+          GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
+          REPO = os.environ['GITHUB_REPOSITORY']
+
+          def comment_on_issue(message, issue_number):
+              url = f"https://api.github.com/repos/{REPO}/issues/{issue_number}/comments"
+              headers = {
+                  'Authorization': f'token {GITHUB_TOKEN}',
+                  'Accept': 'application/vnd.github.v3+json'
+              }
+              data = {'body': message}
+              try:
+                  response = requests.post(url, headers=headers, json=data)
+                  response.raise_for_status()
+              except Exception as e:
+                  print(f"Error commenting on issue #{issue_number}: {e}")
+
+          def get_open_issues():
+              """Get all open issues with variant-creation-needed label"""
+              url = f"https://api.github.com/repos/{REPO}/issues"
+              headers = {
+                  'Authorization': f'token {GITHUB_TOKEN}',
+                  'Accept': 'application/vnd.github.v3+json'
+              }
+              params = {
+                  'labels': 'variant-creation-needed',
+                  'state': 'open'
+              }
+              
+              try:
+                  response = requests.get(url, headers=headers, params=params)
+                  response.raise_for_status()
+                  issues = response.json()
+                  return [str(issue['number']) for issue in issues]
+              except Exception as e:
+                  print(f"Error getting issues: {e}")
+                  return []
+
+          # Schedule retry message for all open issues
+          retry_time = datetime.now() + timedelta(days=1)
+          issue_numbers = get_open_issues()
+          
+          for issue_number in issue_numbers:
+              comment_on_issue(f"🔄 **Variant Creation Retry Scheduled**: The workflow encountered issues and will automatically retry daily at 18:00 UTC for up to 7 days. This is normal when CovSpectrum hasn't updated yet with the new variant data.", issue_number)
+          
+          EOF
