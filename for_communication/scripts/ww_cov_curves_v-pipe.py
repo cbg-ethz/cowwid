@@ -115,7 +115,7 @@ for d, ls in bydates.items():
 only_start_from = {
     "Kanton Zürich": "2021-08-15",  # start_date
     "Lausanne (VD)": "2023-01-01",
-    "Basel (BS)": "2024-02-01",
+    "Basel (BS)": "2024-02-01", # there is a filter for absel to start when eawag took over the sequencing
     # 'B.1.1.529':'2021-10-05',
 }
 print(only_start_from)
