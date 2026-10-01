@@ -2,7 +2,7 @@
 
 ################################  Generate Curves  ################################
 # Input
-#jsonfile_smooth: "/cluster/project/pangolin/processes/sars_cov_2/lollipop/variants/deconvoluted_upload.json"
+#jsonfile_smooth: "/cluster/project/pangolin/processes/sars_cov_2/vpipe_output/variants/deconvoluted_upload.json"
 #use stitched curve for processing
 jsonfile_smooth: "/cluster/project/pangolin/resources/cowwid/json_parser_for_variant_curve_stitching/results/stitched_curve.json"
 
@@ -89,7 +89,7 @@ Public_polybox_url: "https://bs-pangolin@polybox.ethz.ch/remote.php/dav/files/bs
 ################################  Switzerland map ################################
 
 #Input
-deconvolution:  "/cluster/project/pangolin/processes/sars_cov_2/lollipop/variants/deconvoluted.tsv.zst"
+deconvolution:  "/cluster/project/pangolin/processes/sars_cov_2/vpipe_output/variants/deconvoluted.tsv.zst"
 
 #Resources
 switzerland_map: "/cluster/project/pangolin/resources/cowwid/for_communication/resources/switzerland.geojson"
