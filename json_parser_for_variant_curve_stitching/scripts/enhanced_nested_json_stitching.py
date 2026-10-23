@@ -95,9 +95,13 @@ def index_by_date(ts: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
 def collect_location_date_grid(old_variants: Dict[str, Any], new_variants: Dict[str, Any]) -> List[str]:
     """Union of all dates across OLD+NEW for a location (shared date grid)."""
     dates: Set[str] = set()
+    #collect all variants
     for variants in (old_variants, new_variants):
-        for vdata in (variants or {}).values():
-            for row in (vdata or {}).get("timeseriesSummary", []):
+        #loop over variants
+        for vdata in variants.values():
+            #get the date
+            for row in vdata.get("timeseriesSummary", []):
+                # check if timeseries is dict and contains date, if yes then add to time grid
                 if isinstance(row, dict) and row.get("date"):
                     dates.add(row["date"])
     return sorted(dates)
@@ -119,11 +123,16 @@ def stitch_variant_timeseries(
     old_summary = old_variant_data.get("timeseriesSummary", [])
     new_summary = new_variant_data.get("timeseriesSummary", [])
 
+    # this keeps only old data BEFORE the stitching date
+    #If the stitch date is March 10, all OLD values from March 10 onwards are discarded, even if NEW has no data for those dates.
     old_kept = [e for e in old_summary if isinstance(e, dict) and e.get("date") and e["date"] < stitch_date]
     old_by_date = index_by_date(old_kept)
+    #alternative: don't cut the old curve (not prefered, because the above allowes to fild errors)
+    #old_by_date = index_by_date(old_summary)
     new_by_date = index_by_date(new_summary)
 
     merged = dict(old_by_date)
+    # the new values overwirte the old ones 
     merged.update(new_by_date)  # prefer NEW on overlap
 
     if not old_summary and new_summary:
@@ -200,10 +209,34 @@ def stitch_datasets(
                 location=location,
                 variant=variant
             )
+            check_filled_zeros(location, variant, merged_by_date, grid)
             stitched_ts = fill_variant_to_grid(merged_by_date, grid)
             stitched_data[location][variant] = {"timeseriesSummary": stitched_ts}
 
     return stitched_data
+
+def check_filled_zeros(location, variant, merged_by_date, grid_dates):
+    """Warn if missing dates are filled with zeros between non-zero values."""
+
+    nonzero_dates = sorted(
+        date for date, row in merged_by_date.items()
+        if row.get("proportion") is not None
+        and row["proportion"] != 0
+    )
+
+    if len(nonzero_dates) < 2:
+        return
+
+    first_date = nonzero_dates[0]
+    last_date = nonzero_dates[-1]
+
+    for date in grid_dates:
+        if first_date < date < last_date and date not in merged_by_date:
+            logging.warning(
+                f"Artificial zero introduced: "
+                f"Location={location}, Variant={variant}, Date={date}"
+            )
+
 
 # --------- MAIN EXECUTION ---------
 
