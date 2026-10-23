@@ -34,7 +34,7 @@ python "$analysis_dir/scripts/enhanced_nested_json_stitching.py" \
   > "$analysis_dir/logs/stitching_${ts}.log" 2>&1
 
 #make a copy with fixed name to be used in config file
-cp "$analysis_dir/results/stitched_curve_${ts}.json" "$analysis_dir/results/stitched_curve.json"
+cp -p "$analysis_dir/results/stitched_curve_${ts}.json" "$analysis_dir/results/stitched_curve.json"
 
 conda deactivate
 
