@@ -11,6 +11,9 @@ for_communication/resources/
 covvfit/analysis/lollipop/results
 covvfit/analysis/covvfit_analysis/results
 
+covvfit_depricated_20261001/
+genspectrum_upload/sev_run_uploader.sh
+
 # Temporary or backup files
 *.log
 *.tmp
