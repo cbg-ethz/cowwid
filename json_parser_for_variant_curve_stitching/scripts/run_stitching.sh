@@ -8,7 +8,8 @@ conda activate stitching_env
 ts=$(date +"%Y-%m-%d_%H-%M-%S")
 
 analysis_dir="/cluster/project/pangolin/resources/cowwid/json_parser_for_variant_curve_stitching"
-#old_backup_curve="/cluster/project/pangolin/processes/sars_cov_2/vpipe_output/variants/bck_20250804_deconvoluted_upload.json" #is this a valid one? otherwise get an upload from wiseDB!
+old_backup_curve="/cluster/project/pangolin/resources/cowwid/json_parser_for_variant_curve_stitching/results/stitched_curve_2026-03-09_16-29-44.json" #"/cluster/project/pangolin/resources/cowwid/json_parser_for_variant_curve_stitching/results/stitched_curve_2026-09-08_10-51-57.json" #"/cluster/project/pangolin/processes/sars_cov_2/vpipe_output/variants/bck_20250804_deconvoluted_upload.json" #is this a valid one? otherwise get an upload from wiseDB!
+new_only_few_month_curve="/cluster/project/pangolin/processes/sars_cov_2/vpipe_output/variants/deconvoluted_upload.json"
 #new_only_few_month_curve="/cluster/project/pangolin/processes/sars_cov_2/explore-new-variants/variants/20260119_backup_results_NO_ba32/deconvoluted_upload.json" #TBD in /cluster/project/pangolin/processes/sars_cov_2/explore-new-variants
 ### compare output with /cluster/project/pangolin/processes/sars_cov_2/vpipe_output/variants/bckup15jan_deconvoluted_upload.json
 

@@ -5,7 +5,7 @@ Updated on 27 Jan 2026 kkirschen
 - adapt and run the bash script:
 `/cluster/project/pangolin/resources/cowwid/json_parser_for_variant_curve_stitching/scripts/run_stitching.sh`
 
-For the regular processing this script is valled from: `/cluster/project/pangolin/resources/cowwid/for_communication/scripts/make_curves.sh`
+For the regular processing this script is called from: `/cluster/project/pangolin/resources/cowwid/for_communication/scripts/make_curves.sh`
 - to generate a start curve as stitched curve i ran `/cluster/project/pangolin/resources/cowwid/json_parser_for_variant_curve_stitching/scripts/run_stitching.sh`with the folowing 2 files:
 old_backup_curve="/cluster/project/pangolin/processes/sars_cov_2/lollipop/reporting_20Jan2026/deconvoluted_upload.json"
 new_only_few_month_curve="/cluster/project/pangolin/processes/sars_cov_2/lollipop/variants/deconvoluted_upload.json"
