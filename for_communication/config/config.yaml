@@ -52,6 +52,7 @@ color_map:
   XFG: "#bd8e23"
   BA.3.2: "#2EE6D6" #imporv
   PJ.2.1: "#2a2470" #improv
+  ST.1: '#FF6B5A' #'#7a4a10' #improv
   undetermined: "#969696"
 
 blacklist:

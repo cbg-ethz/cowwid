@@ -46,6 +46,8 @@ variants_pangolin:
   "xfg": "XFG"
   "ba32": "BA.3.2"
   "pj.2.1": "PJ.2.1"
+  "st.1": "ST.1"
+
 
 #variants_not_reported:
  # - "BA.2.75.2"
